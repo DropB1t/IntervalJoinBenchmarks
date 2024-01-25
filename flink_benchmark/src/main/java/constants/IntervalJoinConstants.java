@@ -30,15 +30,21 @@ package constants;
  *  Constants peculiar of the IntervalJoinBenchmarks application.
  */ 
 public interface IntervalJoinConstants{
-    String HELP = "help";
+    String HELP = "--help";
     String DEFAULT_PROPERTIES = "/ij.properties";
     String DEFAULT_TOPO_NAME = "IntervalJoinBenchmark";
 
     interface Conf {
         String SOURCE_PATH = "ij.source.path";
         String RUNTIME = "ij.runtime_sec";
-        String LOWER_BOUND = "sd.parser.value_field";
-        String UPPER_BOUND = "sd.moving_average.window";
+        String THROUGHPUT = "ij.target_throughput";
+        String LOWER_BOUND = "ij.lower_bound";
+        String UPPER_BOUND = "ij.upper_bound";
+        String NUM_KEYS = "ij.num_keys";
+        String SEED = "ij.seed";
+        String RSEED = "ij.ts_rseed";
+        String LSEED = "ij.ts_lseed";
+        String ZIPF_EXPONENT = "ij.zipf_exponent";
     }
     
     interface Component{

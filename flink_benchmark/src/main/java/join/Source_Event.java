@@ -1,17 +1,17 @@
 /**************************************************************************************
- *  Copyright (c) 2024- Gabriele Mencagli and Yuriy Rymarchuk
+ *  Copyright (c) 2019- Gabriele Mencagli and Alessandra Fais
  *  
- *  This file is part of IntervalJoinBenchmarks.
+ *  This file is part of StreamBenchmarks.
  *  
- *  IntervalJoinBenchmarks is free software dual licensed under the GNU LGPL or MIT License.
+ *  StreamBenchmarks is free software dual licensed under the GNU LGPL or MIT License.
  *  You can redistribute it and/or modify it under the terms of the
  *    * GNU Lesser General Public License as published by
  *      the Free Software Foundation, either version 3 of the License, or
  *      (at your option) any later version
  *    OR
- *    * MIT License: https://github.com/DropB1t/IntervalJoinBenchmarks/blob/main/LICENSE
+ *    * MIT License: https://github.com/ParaGroup/StreamBenchmarks/blob/master/LICENSE.MIT
  *  
- *  IntervalJoinBenchmarks is distributed in the hope that it will be useful,
+ *  StreamBenchmarks is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -21,23 +21,27 @@
  **************************************************************************************
  */
 
-package util;
+package join;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class Source_Event {
+	public int key;
+	public int value;
+	public long ts;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
+	public Source_Event() {
+		key = -1;
+		value = 0;
+		ts = 0L;
+	}
 
-// Log class
-public class Log {
-    static {
-        Configurator.setLevel("join", Level.INFO);
-        Configurator.setRootLevel(Level.ERROR);
-    }
+	public Source_Event(int _key, int _val, long _ts) {
+		key = _key;
+		value = _val;
+		ts = _ts;
+	}
 
-    // get method
-    public static Logger get(Class<?> klass) {
-        return LoggerFactory.getLogger(klass);
-    }
+	@Override
+	public String toString() {
+		return key + " - " + value + " - " + ts;
+	}
 }
