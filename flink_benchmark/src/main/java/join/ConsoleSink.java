@@ -81,9 +81,10 @@ public class ConsoleSink extends RichSinkFunction<Source_Event> {
         }
         else {
             long t_elapsed = (t_end - t_start) / 1000000; // elapsed time in milliseconds
+            //LOG.info("exec time " + t_elapsed + " | in second " + ((double)t_elapsed / 1000) );
             LOG.info("[Sink] execution time: " + t_elapsed +
                     " ms, processed: " + processed +
-                    ", bandwidth: " + processed / (t_elapsed / 1000) +  // tuples per second
+                    ", bandwidth: " + Math.floor(processed / ((double)t_elapsed / 1000)) +  // tuples per second
                     " tuples/s");
             MetricGroup.add("latency", latency);
         }

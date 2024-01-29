@@ -44,12 +44,13 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.co.ProcessJoinFunction;
+import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 
 import join.sources.DistributionSource;
-
+import join.sources.FileSource;
 import constants.IntervalJoinConstants;
 import constants.IntervalJoinConstants.Conf;
 import util.Log;
@@ -61,10 +62,11 @@ public class IntervalJoinBench {
 
     public static void main(String[] args) throws Exception {
 
-        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource,nInterval-Join,nSink> --type < su | sz | rd > [--chaining]\n" + 
+        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource,nInterval-Join,nSink> --type < su | sz | rd | sd > [--chaining]\n" + 
                        "Types:\n\tsu = synthetic dataset with uniform distribution" + 
                        "\n\tsz = synthetic dataset with zipf distribution" + 
-                       "\n\trd = real dataset\n\n";
+                       "\n\trd = rovio dataset" + 
+                       "\n\tsd = stock dataset\n\n";
 
         if (args.length == 1 && args[0].equals(IntervalJoinConstants.HELP)) {
             System.out.print(alert);
@@ -122,15 +124,30 @@ public class IntervalJoinBench {
         double exponent = conf.getDouble(ConfigOptions.key(Conf.ZIPF_EXPONENT).doubleType().defaultValue(1.1));
         Well19937c rnd = new Well19937c(distribution_seed);
 
-        DistributionSource orangeSource, greenSource;
-        if (type.equals("su")) {
-            UniformIntegerDistribution Distribution = new UniformIntegerDistribution(rnd, 1, num_keys);
-            orangeSource = new DistributionSource(runtime, rate, targetThroughput, rseed, Distribution.sample(targetThroughput));
-            greenSource = new DistributionSource(runtime, rate, targetThroughput, lseed, Distribution.sample(targetThroughput));
-        } else {
-            ZipfDistribution Distribution = new ZipfDistribution(rnd, num_keys, exponent);
-            orangeSource = new DistributionSource(runtime, rate, targetThroughput, rseed, Distribution.sample(targetThroughput));
-            greenSource = new DistributionSource(runtime, rate, targetThroughput, lseed, Distribution.sample(targetThroughput));
+        RichParallelSourceFunction<Source_Event> orangeSource, greenSource;
+        switch (type) {
+            case "sz":
+                ZipfDistribution zDistribution = new ZipfDistribution(rnd, num_keys, exponent);
+                orangeSource = new DistributionSource(runtime, rate, targetThroughput, rseed, zDistribution.sample(targetThroughput));
+                greenSource = new DistributionSource(runtime, rate, targetThroughput, lseed, zDistribution.sample(targetThroughput));
+                break;
+            case "rd":
+                String file_path = conf.get(ConfigOptions.key(Conf.ROVIO_PATH).stringType().noDefaultValue());
+                orangeSource = new FileSource(file_path, runtime, rate, targetThroughput, rseed);
+                greenSource = new FileSource(file_path, runtime, rate, targetThroughput, lseed);
+                break;
+            case "sd":
+                String rpath = conf.get(ConfigOptions.key(Conf.RSTOCK_PATH).stringType().noDefaultValue());
+                String lpath = conf.get(ConfigOptions.key(Conf.LSTOCK_PATH).stringType().noDefaultValue());
+                orangeSource = new FileSource(rpath, runtime, rate, targetThroughput, rseed);
+                greenSource = new FileSource(lpath, runtime, rate, targetThroughput, lseed);
+                break;
+            case "su":
+            default:
+                UniformIntegerDistribution uDistribution = new UniformIntegerDistribution(rnd, 1, num_keys);
+                orangeSource = new DistributionSource(runtime, rate, targetThroughput, rseed, uDistribution.sample(targetThroughput));
+                greenSource = new DistributionSource(runtime, rate, targetThroughput, lseed, uDistribution.sample(targetThroughput));
+                break;
         }
 
         // Set up the streaming execution Environment
@@ -155,26 +172,37 @@ public class IntervalJoinBench {
         */
 
         String print_type = "";
-        if (type.equals("su")) {
-            print_type = "Synthetic Test (Uniform Distribution)";
-        } else if (type.equals("sz")) {
-            print_type = "Synthetic Test (ZipF Distribution)";
-        } else {
-            print_type = "Real data Test";
+        switch (type) {
+            case "sz":
+                print_type = "Synthetic Test (ZipF Distribution)";
+                break;
+            case "rd":
+                print_type = "Rovio Dataset";
+                break;
+            case "sd":
+                print_type = "Stock Dataset";
+                break;
+            case "su":
+            default:
+                print_type = "Synthetic Test (Uniform Distribution)";
+                break;
         }
+
+        String synthetic_stats = 
+        "  * throughput: " + targetThroughput + "\n" +
+        "  * num_keys: " + num_keys + "\n";
 
         // print app info
         LOG.info("Submiting " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " with parameters:\n\n" +
-        "  * throughput: " + targetThroughput + "\n" +
         "  * rate: " + ((rate == 0) ? "full_speed" : rate) + " tuples/second\n" +
         "  * sampling: " + samplingRate + "\n" +
+        ((type.equals("su") || type.equals("sz")) ? synthetic_stats : "") +
         "  * \n" +
         "  * source1: " + source1_deg + "\n" +
         "  * source2: " + source2_deg + "\n" +
         "  * join: " + join_deg + "\n" +
         "  * sink: " + sink_deg + "\n" +
         "  * \n" +
-        "  * num_keys: " + num_keys + "\n" +
         "  * lower_bound: " + lower_bound + "\n" +
         "  * upper_bound: " + upper_bound + "\n" +
         "  * type: " + print_type + "\n" +
@@ -232,7 +260,7 @@ public class IntervalJoinBench {
                     new ProcessJoinFunction<Source_Event, Source_Event, Source_Event>() {
                         @Override
                         public void processElement(Source_Event first, Source_Event second, Context ctx, Collector<Source_Event> out) throws Exception {
-                            //LOG.info(first.ts + " | " + second.ts);
+                            //LOG.info(first.key + " | " + second.key);
                             out.collect(new Source_Event(first.key, (first.value+second.value), Math.max(first.ts, second.ts)));
                         }
                 }).setParallelism(par_deg);
