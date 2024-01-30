@@ -62,7 +62,7 @@ public class IntervalJoinBench {
 
     public static void main(String[] args) throws Exception {
 
-        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource,nInterval-Join,nSink> --type < su | sz | rd | sd > [--chaining]\n" + 
+        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource1,nSource2,nInterval-Join,nSink> --type < su | sz | rd > [--chaining]\n" + 
                        "Types:\n\tsu = synthetic dataset with uniform distribution" + 
                        "\n\tsz = synthetic dataset with zipf distribution" + 
                        "\n\trd = rovio dataset" + 
@@ -86,8 +86,8 @@ public class IntervalJoinBench {
             throw new RuntimeException("Unable to load configuration file", e);
         }
         
-        int targetThroughput = conf.getInteger(ConfigOptions.key(Conf.THROUGHPUT).intType().defaultValue(2000000));
         int runtime = conf.getInteger(ConfigOptions.key(Conf.RUNTIME).intType().defaultValue(60)); // runtime in seconds - default 1 min
+        int dataSize = conf.getInteger(ConfigOptions.key(Conf.DATA_SIZE).intType().defaultValue(2000000));
         
         int lower_bound = conf.getInteger(ConfigOptions.key(Conf.LOWER_BOUND).intType().defaultValue(-500));
         int upper_bound = conf.getInteger(ConfigOptions.key(Conf.UPPER_BOUND).intType().defaultValue(500));
@@ -128,25 +128,25 @@ public class IntervalJoinBench {
         switch (type) {
             case "sz":
                 ZipfDistribution zDistribution = new ZipfDistribution(rnd, num_keys, exponent);
-                orangeSource = new DistributionSource(runtime, rate, targetThroughput, rseed, zDistribution.sample(targetThroughput));
-                greenSource = new DistributionSource(runtime, rate, targetThroughput, lseed, zDistribution.sample(targetThroughput));
+                orangeSource = new DistributionSource(runtime, rate, rseed, zDistribution.sample(dataSize), dataSize);
+                greenSource = new DistributionSource(runtime, rate, lseed, zDistribution.sample(dataSize), dataSize);
                 break;
             case "rd":
                 String file_path = conf.get(ConfigOptions.key(Conf.ROVIO_PATH).stringType().noDefaultValue());
-                orangeSource = new FileSource(file_path, runtime, rate, targetThroughput, rseed);
-                greenSource = new FileSource(file_path, runtime, rate, targetThroughput, lseed);
+                orangeSource = new FileSource(file_path, runtime, rate, rseed);
+                greenSource = new FileSource(file_path, runtime, rate, lseed);
                 break;
             case "sd":
                 String rpath = conf.get(ConfigOptions.key(Conf.RSTOCK_PATH).stringType().noDefaultValue());
                 String lpath = conf.get(ConfigOptions.key(Conf.LSTOCK_PATH).stringType().noDefaultValue());
-                orangeSource = new FileSource(rpath, runtime, rate, targetThroughput, rseed);
-                greenSource = new FileSource(lpath, runtime, rate, targetThroughput, lseed);
+                orangeSource = new FileSource(rpath, runtime, rate, rseed);
+                greenSource = new FileSource(lpath, runtime, rate, lseed);
                 break;
             case "su":
             default:
                 UniformIntegerDistribution uDistribution = new UniformIntegerDistribution(rnd, 1, num_keys);
-                orangeSource = new DistributionSource(runtime, rate, targetThroughput, rseed, uDistribution.sample(targetThroughput));
-                greenSource = new DistributionSource(runtime, rate, targetThroughput, lseed, uDistribution.sample(targetThroughput));
+                orangeSource = new DistributionSource(runtime, rate, rseed, uDistribution.sample(dataSize), dataSize);
+                greenSource = new DistributionSource(runtime, rate, lseed, uDistribution.sample(dataSize), dataSize);
                 break;
         }
 
@@ -188,8 +188,8 @@ public class IntervalJoinBench {
                 break;
         }
 
-        String synthetic_stats = 
-        "  * throughput: " + targetThroughput + "\n" +
+        String synthetic_stats =
+        "  * data_size: " + dataSize + "\n" +
         "  * num_keys: " + num_keys + "\n";
 
         // print app info

@@ -23,34 +23,38 @@ public class FileSource extends RichParallelSourceFunction<Source_Event> {
     private long t_start;
     private long t_end;
 
+    private transient final String file_path;
     private ArrayList<Integer> keys;
     private ArrayList<Integer> values;
-    private int data_size = 0;
+    private int data_size;
     
-    private transient final String file_path;
+    private final long runtime;
     private boolean running = true;
-    //private final long runtime;
     
-    private int generated = 0;
     private final int gen_rate;
+    private long nt_execution;
+    private long generated;
+    private int index;
     
     private Sampler throughput_sampler;
-    //private final int throughput;
 
     private long ts = 1704106800000L; // January 1, 2024 12:00:00 AM in ms
-
-    private Random offset;
     private final int offset_seed;
+    private Random offset;
 
-    public FileSource(String path, long _runtime, int _gen_rate, int _throughput, int _offset_seed) {
-        //this.runtime = (long) (_runtime * 1e9); // ns
-        //this.throughput = _throughput;
+    public FileSource(String path, long _runtime, int _gen_rate, int _offset_seed) {
+        this.runtime = (long) (_runtime * 1e9); // ns
         this.offset_seed = _offset_seed;
         this.gen_rate = _gen_rate;
         this.file_path = path;
 
         keys = new ArrayList<>();
         values = new ArrayList<>();
+        
+        index = 0;
+        generated = 0;
+        data_size = 0;
+        nt_execution = 0;
         parseDataset();
     }
     
@@ -66,14 +70,20 @@ public class FileSource extends RichParallelSourceFunction<Source_Event> {
         this.t_start = System.nanoTime();
 
         // generation loop
-        while (/* (System.nanoTime() - this.t_start < runtime) */ generated < data_size && running) {
+        while ((System.nanoTime() - this.t_start < runtime) && running) {
             ts += offset.nextInt(500);
-            ctx.collectWithTimestamp(new Source_Event(keys.get(generated), values.get(generated), System.nanoTime()), ts);
+            ctx.collectWithTimestamp(new Source_Event(keys.get(index), values.get(index), System.nanoTime()), ts);
             generated++;
+            index++;
 
-            if (gen_rate != 0) { // not full speed
+            if (gen_rate != 0) { // limit generation rate with active delay
                 long delay_nsec = (long) ((1.0d / gen_rate) * 1e9);
                 active_delay(delay_nsec);
+            }
+            
+            if (index >= data_size) { // check the dataset boundaries
+                index = 0;
+                nt_execution++;
             }
         }
 
@@ -100,15 +110,15 @@ public class FileSource extends RichParallelSourceFunction<Source_Event> {
                     values.add(Integer.valueOf(fields[2]));
                     //LOG.info("[Source] tuple: key " + fields[0] + ", value " + fields[2]);
                 } else
-                    LOG.debug("[Source] incomplete record");
+                    LOG.debug("[Source] bad formed record");
             }
             data_size = keys.size();
             scan.close();
             scan = null;
         }
         catch (FileNotFoundException | NullPointerException e) {
-            //LOG.error("The file {} does not exists", file_path);
-            throw new RuntimeException("The file '"  + "' does not exists");
+            LOG.error("The file {} does not exists", file_path);
+            throw new RuntimeException("The file '"  + file_path + "' does not exists");
         }
     }
 
@@ -138,9 +148,10 @@ public class FileSource extends RichParallelSourceFunction<Source_Event> {
             LOG.info("[Source] processed tuples: " + generated);
         } else {
             long t_elapsed = (this.t_end - this.t_start) / 1000000; // elapsed time in milliseconds
-            double rate = Math.floor( generated / ((this.t_end - this.t_start) / 1e9) ); // per second
+            double rate = Math.floor( generated / ((double)(this.t_end - this.t_start) / 1e9) ); // per second
             LOG.info("[Source] execution time: " + t_elapsed +
                     " ms, generated: " + generated +
+                    ", generations: " + nt_execution +
                     ", bandwidth: " + rate +  // tuples per second
                     " tuples/s");
 

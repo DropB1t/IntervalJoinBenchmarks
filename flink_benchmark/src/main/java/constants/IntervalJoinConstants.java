@@ -39,7 +39,7 @@ public interface IntervalJoinConstants{
         String LSTOCK_PATH = "ij.source.l_stock_path";
         String ROVIO_PATH = "ij.source.rovio_path";
         String RUNTIME = "ij.runtime_sec";
-        String THROUGHPUT = "ij.target_throughput";
+        String DATA_SIZE = "ij.data_size";
         String LOWER_BOUND = "ij.lower_bound";
         String UPPER_BOUND = "ij.upper_bound";
         String NUM_KEYS = "ij.num_keys";

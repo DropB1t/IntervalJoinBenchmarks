@@ -16,42 +16,46 @@ public class DistributionSource extends RichParallelSourceFunction<Source_Event>
 
     private static final Logger LOG = LoggerFactory.getLogger(DistributionSource.class);
     
-    static final int VALUE_MAX = 10;
+    static final int VALUE = 10;
 
     private long t_start;
     private long t_end;
 
     private int[] keys;
+    private int data_size;
     
+    private final long runtime;
     private boolean running = true;
-    //private final long runtime;
     
-    private int generated = 0;
     private final int gen_rate;
+    private long nt_execution;
+    private long generated;
+    private int index;
     
     private Sampler throughput_sampler;
-    private final int throughput;
 
     private long ts = 1704106800000L; // January 1, 2024 12:00:00 AM in ms
-
-    private Random rnd;
-    private Random offset;
     private final int offset_seed;
+    private Random offset;
 
-    public DistributionSource(long _runtime, int _gen_rate, int _throughput, int _offset_seed, int[] _keys) {
-        //this.runtime = (long) (_runtime * 1e9); // ns
+    public DistributionSource(long _runtime, int _gen_rate, int _offset_seed, int[] _keys, int _data_size) {
+        this.runtime = (long) (_runtime * 1e9); // ns
         this.offset_seed = _offset_seed;
-        this.throughput = _throughput;
         this.gen_rate = _gen_rate;
+
+        this.data_size = _data_size;
         this.keys = _keys;
+
+        index = 0;
+        generated = 0;
+        nt_execution = 0;
     }
     
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        this.rnd = new XORShiftRandom();
-        this.offset = new XORShiftRandom(offset_seed);
         throughput_sampler = new Sampler();
+        this.offset = new XORShiftRandom(offset_seed);
     }
 
     @Override
@@ -59,14 +63,20 @@ public class DistributionSource extends RichParallelSourceFunction<Source_Event>
         this.t_start = System.nanoTime();
 
         // generation loop
-        while (/* (System.nanoTime() - this.t_start < runtime) */ generated < throughput && running) {
+        while ((System.nanoTime() - this.t_start < runtime) && running) {
             ts += offset.nextInt(500);
-            ctx.collectWithTimestamp(new Source_Event(keys[generated], rnd.nextInt(VALUE_MAX) + 1, System.nanoTime()), ts);
+            ctx.collectWithTimestamp(new Source_Event(keys[index], VALUE, System.nanoTime()), ts);
             generated++;
+            index++;
 
             if (gen_rate != 0) { // not full speed
                 long delay_nsec = (long) ((1.0d / gen_rate) * 1e9);
                 active_delay(delay_nsec);
+            }
+
+            if (index >= data_size) { // check the dataset boundaries
+                index = 0;
+                nt_execution++;
             }
         }
 
@@ -105,6 +115,7 @@ public class DistributionSource extends RichParallelSourceFunction<Source_Event>
             double rate = Math.floor( generated / ((double)(this.t_end - this.t_start) / 1e9) ); // per second
             LOG.info("[Source] execution time: " + t_elapsed +
                     " ms, generated: " + generated +
+                    ", generations: " + nt_execution +
                     ", bandwidth: " + rate +  // tuples per second
                     " tuples/s");
 
