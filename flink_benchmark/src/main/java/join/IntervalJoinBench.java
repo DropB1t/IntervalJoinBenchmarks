@@ -62,7 +62,7 @@ public class IntervalJoinBench {
 
     public static void main(String[] args) throws Exception {
 
-        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource1,nSource2,nInterval-Join,nSink> --type < su | sz | rd > [--chaining]\n" + 
+        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource1,nSource2,nInterval-Join,nSink> --type < su | sz | rd | sd > [--chaining]\n" + 
                        "Types:\n\tsu = synthetic dataset with uniform distribution" + 
                        "\n\tsz = synthetic dataset with zipf distribution" + 
                        "\n\trd = rovio dataset" + 
