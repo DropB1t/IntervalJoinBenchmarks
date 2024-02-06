@@ -21,8 +21,8 @@
  **************************************************************************************
  */
 
-#ifndef WORDCOUNT_RESULT_HPP
-#define WORDCOUNT_RESULT_HPP
+#ifndef IJ_TUPLE_HPP
+#define IJ_TUPLE_HPP
 
 #include<windflow.hpp>
 
@@ -51,6 +51,7 @@ struct tuple_t
             key(_key),
             value(_value),
             ts(0) {}
+            
 };
 
 #if 1
@@ -64,4 +65,4 @@ struct std::hash<tuple_t>
 };
 #endif
 
-#endif //WORDCOUNT_RESULT_HPP
+#endif //IJ_TUPLE_HPP

@@ -21,8 +21,8 @@
  **************************************************************************************
  */
 
-#ifndef WORDCOUNT_SOURCE_HPP
-#define WORDCOUNT_SOURCE_HPP
+#ifndef IJ_SOURCE_HPP
+#define IJ_SOURCE_HPP
 
 #include<fstream>
 #include<vector>
@@ -41,8 +41,10 @@ extern atomic<long> total_bytes;
 class Source_Functor
 {
 private:
-    std::mt19937 generator;
-    uint64_t next_ts = 1704106800000; // next timestamp in ms starting from January 1, 2024 12:00:00 AM
+    Execution_Mode_t execution_mode;
+
+    uint seed;
+    uint64_t next_ts = 1704106800000000; // next timestamp in us starting from January 1, 2024 12:00:00 AM
 
     size_t tuple_size = sizeof(tuple_t);
     const vector<tuple_t> &dataset;
@@ -75,7 +77,8 @@ public:
                    const int _rate,
                    const unsigned long _app_start_time,
                    const size_t _batch_size,
-                   const uint seed):
+                   const uint _seed,
+                   Execution_Mode_t _e):
                    dataset(_dataset),
                    rate(_rate),
                    idx(0),
@@ -85,17 +88,19 @@ public:
                    app_start_time(_app_start_time),
                    current_time(_app_start_time),
                    batch_size(_batch_size),
-                   data_size(_dataset.size())
-                   {
-                    generator.seed(seed);
-                   }
+                   seed(_seed),
+                   execution_mode(_e),
+                   data_size(_dataset.size()) {}
 
     // operator() method
     void operator()(Source_Shipper<tuple_t> &shipper)
     {
-        std::uniform_int_distribution<int> distribution(0, 500);
+        std::uniform_int_distribution<int> distribution(300, 750);
+        std::mt19937 generator;
+        generator.seed(seed);
+
         current_time = current_time_nsecs(); // get the current time
-        while (current_time - app_start_time <= app_run_time) // generation loop
+        while ( /* idx < data_size */ current_time - app_start_time <= app_run_time) // generation loop
         {
             /* if ((batch_size > 0) && (generated_tuples % batch_size == 0)) {
                 current_time = current_time_nsecs(); // get the new current time
@@ -110,7 +115,11 @@ public:
 
             t.ts = current_time_nsecs();
             shipper.pushWithTimestamp(std::move(t), next_ts); // send the next tuple
+            if (execution_mode == Execution_Mode_t::DEFAULT) {
+                shipper.setNextWatermark(next_ts);
+            }
 
+            idx++;
             if (idx >= data_size) { // check the dataset boundaries
                 idx = 0;
                 nt_execution++;
@@ -122,7 +131,7 @@ public:
             }
 
             auto offset = (distribution(generator)+1);
-            next_ts += offset;
+            next_ts += offset*1000;
 
             current_time = current_time_nsecs();
         }
@@ -131,4 +140,4 @@ public:
     }
 };
 
-#endif //WORDCOUNT_SOURCE_HPP
+#endif //IJ_SOURCE_HPP

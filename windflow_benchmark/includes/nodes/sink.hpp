@@ -21,8 +21,8 @@
  **************************************************************************************
  */
 
-#ifndef WORDCOUNT_SINK_HPP
-#define WORDCOUNT_SINK_HPP
+#ifndef IJ_SINK_HPP
+#define IJ_SINK_HPP
 
 #include<algorithm>
 #include<iomanip>
@@ -48,6 +48,7 @@ private:
     size_t joined;
 
     util::Sampler latency_sampler;
+    size_t tuple_size = sizeof(tuple_t);
     long bytes_sum;
     long sampling;
 
@@ -59,6 +60,7 @@ public:
                  app_start_time(_app_start_time),
                  current_time(_app_start_time),
                  joined(0),
+                 bytes_sum(0),
                  latency_sampler(_sampling) {}
 
     // operator() method
@@ -71,16 +73,17 @@ public:
             }
             current_time = current_time_nsecs();
             unsigned long tuple_latency = (current_time - (*t).ts) / 1e06;
-            joined++;// tuples counter
             latency_sampler.add(tuple_latency, current_time);
-#if 1
-            if ((*t).key != 10) {
+            joined++;// tuples counter
+            bytes_sum += tuple_size;
+#if 0
+            if (joined < 16) {
                 cout << "Received tuple: key-> " << (*t).key << ", value-> " << (*t).value << endl;
             }
 #endif
         }
         else { // EOS
-            long t_elapsed = (current_time - app_start_time) / 1e09;
+            double t_elapsed = static_cast<double>(current_time - app_start_time) / 1e09;
             if (joined != 0) {
                 cout << "[Sink] joined: "
                          << joined << " (tuples) "
@@ -93,4 +96,4 @@ public:
     }
 };
 
-#endif //WORDCOUNT_SINK_HPP
+#endif //IJ_SINK_HPP

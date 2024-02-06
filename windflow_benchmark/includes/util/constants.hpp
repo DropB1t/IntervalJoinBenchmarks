@@ -21,8 +21,8 @@
  **************************************************************************************
  */
 
-#ifndef WORDCOUNT_CONSTANTS_HPP
-#define WORDCOUNT_CONSTANTS_HPP
+#ifndef IJ_CONSTANTS_HPP
+#define IJ_CONSTANTS_HPP
 
 #include<string>
 
@@ -54,4 +54,4 @@ const string l_stock_path ="../datasets/stock/sb_1000ms_1t.txt";
 
 const char default_split_char = '|';
 
-#endif //WORDCOUNT_CONSTANTS_HPP
+#endif //IJ_CONSTANTS_HPP

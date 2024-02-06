@@ -82,11 +82,6 @@ vector<tuple_t> create_tuples_uniform_keys(int num_keys, int size, uint seed)
     for (int i = 0; i < size; i++)
     {
         tuple_t t(dist(rng));
-#if 0
-            if (i < 10) {
-                cout << "Generated tuple: key-> " << t.key << ", value-> " << t.value << endl;
-            }
-#endif
         dataset.push_back(t);
     }
     return dataset;
@@ -280,16 +275,17 @@ int main(int argc, char *argv[])
 
     /// application starting time
     unsigned long app_start_time = current_time_nsecs();
+    Execution_Mode_t exec_mode = Execution_Mode_t::DEFAULT;
 
-    PipeGraph topology(topology_name, Execution_Mode_t::DEFAULT, Time_Policy_t::EVENT_TIME);
-    Source_Functor rsource_functor(rdataset, rate, app_start_time, batch_size, rseed);
+    PipeGraph topology(topology_name, exec_mode, Time_Policy_t::EVENT_TIME);
+    Source_Functor rsource_functor(rdataset, rate, app_start_time, batch_size, rseed, exec_mode);
     Source rsource = Source_Builder(rsource_functor)
                     .withParallelism(rsource_par_deg)
                     .withName(r_source_name)
                     .withOutputBatchSize(batch_size)
                     .build();
 
-    Source_Functor lsource_functor(ldataset, rate, app_start_time, batch_size, lseed);
+    Source_Functor lsource_functor(ldataset, rate, app_start_time, batch_size, lseed, exec_mode);
     Source lsource = Source_Builder(lsource_functor)
                     .withParallelism(lsource_par_deg)
                     .withName(l_source_name)
@@ -302,7 +298,7 @@ int main(int argc, char *argv[])
                             .withName(join_name)
                             .withOutputBatchSize(batch_size)
                             .withKeyBy([](const tuple_t &t) -> size_t { return t.key; })
-                            .withBoundaries(microseconds(lower_bound), microseconds(upper_bound))
+                            .withBoundaries(milliseconds(lower_bound), milliseconds(upper_bound))
                             .withKPMode()
                             .build();
 
@@ -318,22 +314,22 @@ int main(int argc, char *argv[])
     join_pipe.add(join);
 
     if (chaining) {
-        cout << "Chaining is enabled" << endl;
+        cout << "  * chaining is enabled" << endl;
         join_pipe.chain_sink(sink);
     } else {
-        cout << "Chaining is disabled" << endl;
+        cout << "  * chaining is disabled" << endl;
         join_pipe.add_sink(sink);
     }
-
+    
+    cout << fixed << setprecision(2);
     cout << "Executing topology" << endl;
     /// evaluate topology execution time
     volatile unsigned long start_time_main_usecs = current_time_usecs();
     topology.run();
     volatile unsigned long end_time_main_usecs = current_time_usecs();
-    cout << "Exiting" << endl;
-    double elapsed_time_seconds = (end_time_main_usecs - start_time_main_usecs) / (1000000.0);
+    double elapsed_time_seconds = static_cast<double>(end_time_main_usecs - start_time_main_usecs) / (1000000.0);
     double throughput = sent_tuples / elapsed_time_seconds;
-    double mbs = (double)((total_bytes / 1048576) / elapsed_time_seconds);
+    double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
     cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
     cout << "Dumping metrics" << endl;
     util::metric_group.dump_all();

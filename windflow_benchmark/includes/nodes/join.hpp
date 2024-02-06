@@ -21,8 +21,8 @@
  **************************************************************************************
  */
 
-#ifndef WORDCOUNT_COUNTER_HPP
-#define WORDCOUNT_COUNTER_HPP
+#ifndef IJ_COUNTER_HPP
+#define IJ_COUNTER_HPP
 
 #include<ff/ff.hpp>
 #include<string>
@@ -62,7 +62,11 @@ public:
 
         tuple_t out(a.key, (a.value + b.value));
         out.ts = max(a.ts, b.ts);
-
+#if 0
+        if (processed < 16) {
+            cout << "  * join tuple: system time-> " << out.ts << ", forged timestamp-> " << rc.getCurrentTimestamp() << endl;
+        }
+#endif
         processed++;
         current_time = current_time_nsecs();
 
@@ -73,13 +77,14 @@ public:
     ~Interval_Join_Functor()
     {
         if (processed != 0) {
+            double delta_time = static_cast<double>(current_time - app_start_time);
             cout << "[Interval_Join] replica " << replica_id + 1 << "/" << parallelism
-                 << ", execution time: " << (current_time - app_start_time) / 1e09
+                 << ", execution time: " << delta_time / 1e09
                  << " s, joined: " << processed << " tuples"
-                 << ", bandwidth: " << processed / ((current_time - app_start_time) / 1e09)
+                 << ", bandwidth: " << processed / (delta_time / 1e09)
                  << " (tuples/s) " << endl;
         }
     }
 };
 
-#endif //WORDCOUNT_COUNTER_HPP
+#endif //IJ_COUNTER_HPP

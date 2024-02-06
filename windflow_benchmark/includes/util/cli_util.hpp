@@ -21,8 +21,8 @@
  **************************************************************************************
  */
 
-#ifndef WORDCOUNT_CLI_UTIL_HPP
-#define WORDCOUNT_CLI_UTIL_HPP
+#ifndef IJ_CLI_UTIL_HPP
+#define IJ_CLI_UTIL_HPP
 
 #include<iomanip>
 #include<iostream>
@@ -49,7 +49,7 @@ const struct option long_opts[] = {
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --rate <value> --keys <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > -l [lower bound in usec] -u [upper bound in usec] [--chaining]";
+const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > -l [lower bound in usec] -u [upper bound in usec] [--chaining]";
 
 // information about application
 const string rsource_str = "  * rsource parallelism degree: ";
@@ -61,4 +61,4 @@ const string app_descr = "Submiting IntervalJoinBenchmark with parameters:";
 const string app_error = "Error executing IntervalJoinBenchmark topology";
 const string app_termination = "Terminated execution of IntervalJoinBenchmark topology with cardinality ";
 
-#endif //WORDCOUNT_CLI_UTIL_HPP
+#endif //IJ_CLI_UTIL_HPP
