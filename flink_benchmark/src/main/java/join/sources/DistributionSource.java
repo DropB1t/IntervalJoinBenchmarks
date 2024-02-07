@@ -6,13 +6,13 @@ import org.apache.flink.util.XORShiftRandom;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import join.Source_Event;
+import join.Event;
 import util.Sampler;
 import util.ThroughputCounter;
 
 import java.util.Random;
 
-public class DistributionSource extends RichParallelSourceFunction<Source_Event> {
+public class DistributionSource extends RichParallelSourceFunction<Event> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DistributionSource.class);
     
@@ -59,13 +59,17 @@ public class DistributionSource extends RichParallelSourceFunction<Source_Event>
     }
 
     @Override
-    public void run(final SourceContext<Source_Event> ctx) throws Exception {
+    public void run(final SourceContext<Event> ctx) throws Exception {
         this.t_start = System.nanoTime();
 
         // generation loop
         while ((System.nanoTime() - this.t_start < runtime) && running) {
             ts += offset.nextInt(500);
-            ctx.collectWithTimestamp(new Source_Event(keys[index], VALUE, System.nanoTime()), ts);
+            Event tuple = new Event();
+            tuple.f0 = keys[index];
+            tuple.f1 = VALUE;
+            tuple.f2 = System.nanoTime();
+            ctx.collectWithTimestamp(tuple, ts);
             generated++;
             index++;
 

@@ -37,19 +37,15 @@ import org.apache.flink.api.common.eventtime.TimestampAssignerSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkGeneratorSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.co.ProcessJoinFunction;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 
 import join.sources.DistributionSource;
@@ -127,7 +123,7 @@ public class IntervalJoinBench {
         double exponent = conf.getDouble(ConfigOptions.key(Conf.ZIPF_EXPONENT).doubleType().defaultValue(1.1));
         Well19937c rnd = new Well19937c(distribution_seed);
 
-        RichParallelSourceFunction<Source_Event> orangeSource, greenSource;
+        RichParallelSourceFunction<Event> orangeSource, greenSource;
         switch (type) {
             case "sz":
                 ZipfDistribution zDistribution = new ZipfDistribution(rnd, num_keys, exponent);
@@ -158,16 +154,20 @@ public class IntervalJoinBench {
         conf_flink.set(TaskManagerOptions.MANAGED_MEMORY_FRACTION, 0.5f);
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf_flink);
         env.getConfig().disableGenericTypes();
-        
-        DataStream<Source_Event> orangeStream = env.addSource(orangeSource)
+       
+        DataStream<Event> orangeStream = env.addSource(orangeSource)
                                                     .setParallelism(source1_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<Source_Event> greenStream = env.addSource(greenSource)
+        DataStream<Event> greenStream = env.addSource(greenSource)
                                                     .setParallelism(source2_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<Source_Event> joinedStream = runIntervalJoin(orangeStream, greenStream, lower_bound, upper_bound, join_deg);
+        DataStream<Event> joinedStream = orangeStream
+                                                .keyBy(new DataKeySelector())
+                                                .intervalJoin(greenStream.keyBy(new DataKeySelector()))
+                                                .between(Time.milliseconds(lower_bound), Time.milliseconds(upper_bound))
+                                                .process( new IntervalJoin() ).setParallelism(join_deg);
 
         joinedStream.addSink(new ConsoleSink(samplingRate)).setParallelism(sink_deg);
 
@@ -250,35 +250,14 @@ public class IntervalJoinBench {
         return Stream.of(stringArray).mapToInt(Integer::parseInt).toArray();
     }
 
-    private static DataStream<Source_Event> runIntervalJoin(
-            DataStream<Source_Event> orangeStream,
-            DataStream<Source_Event> greenStream,
-            long lowerBound,
-            long upperBound,
-            int par_deg) {
-
-            return orangeStream
-                .keyBy(new DataKeySelector())
-                .intervalJoin(greenStream.keyBy(new DataKeySelector()))
-                .between(Time.milliseconds(lowerBound), Time.milliseconds(upperBound))
-                .process(
-                    new ProcessJoinFunction<Source_Event, Source_Event, Source_Event>() {
-                        @Override
-                        public void processElement(Source_Event first, Source_Event second, Context ctx, Collector<Source_Event> out) throws Exception {
-                            //LOG.info(first.key + " | " + second.key);
-                            out.collect(new Source_Event(first.key, (first.value+second.value), Math.max(first.ts, second.ts)));
-                        }
-                }).setParallelism(par_deg);
-        }
-
-    private static class DataKeySelector implements KeySelector<Source_Event, Integer> {
+    private static class DataKeySelector implements KeySelector<Event, Integer> {
         @Override
-        public Integer getKey(Source_Event value) {
-            return value.key;
+        public Integer getKey(Event value) {
+            return value.f0;
         }
     }
 
-    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<Source_Event> {
+    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<Event> {
 
         private IngestionTimeWatermarkStrategy() {}
 
@@ -287,13 +266,13 @@ public class IntervalJoinBench {
         }
 
         @Override
-        public WatermarkGenerator<Source_Event> createWatermarkGenerator(
+        public WatermarkGenerator<Event> createWatermarkGenerator(
                 WatermarkGeneratorSupplier.Context context) {
             return new AscendingTimestampsWatermarks<>();
         }
 
         @Override
-        public TimestampAssigner<Source_Event> createTimestampAssigner(
+        public TimestampAssigner<Event> createTimestampAssigner(
                 TimestampAssignerSupplier.Context context) {
             return (event, timestamp) -> timestamp;
         }

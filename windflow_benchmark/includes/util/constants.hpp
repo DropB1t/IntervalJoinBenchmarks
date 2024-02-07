@@ -47,10 +47,10 @@ const string sink_name = "sink";
 static const char *types_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)", "Rovio Dataset", "Stock Dataset"};
 
 // path of the dataset to be used
-const string rovio_path = "../datasets/rovio/1000ms_1t.txt";
+const string rovio_path = "../../datasets/rovio/1000ms_1t.txt";
 
-const string r_stock_path ="../datasets/stock/cj_1000ms_1t.txt";
-const string l_stock_path ="../datasets/stock/sb_1000ms_1t.txt";
+const string r_stock_path ="../../datasets/stock/cj_1000ms_1t.txt";
+const string l_stock_path ="../../datasets/stock/sb_1000ms_1t.txt";
 
 const char default_split_char = '|';
 

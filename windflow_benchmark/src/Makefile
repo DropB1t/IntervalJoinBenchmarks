@@ -25,7 +25,7 @@ sampler.o: ../includes/util/sampler.cpp
 ij.o: ij.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $(MACRO) $(OPTFLAGS) $< -c
 
-ij: metric.o metric_group.o sampler.o ij.o
+ij: clean metric.o metric_group.o sampler.o ij.o
 	$(CXX) metric.o metric_group.o sampler.o ij.o -o $(OUT_DIR)/ij $(LDFLAGS)
 
 clean:

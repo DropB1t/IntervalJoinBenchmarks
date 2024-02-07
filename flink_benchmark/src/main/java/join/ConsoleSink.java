@@ -36,7 +36,7 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
  *  
  *  Sink node that receives and prints the results.
  */ 
-public class ConsoleSink extends RichSinkFunction<Source_Event> {
+public class ConsoleSink extends RichSinkFunction<Event> {
 
     private static final Logger LOG = Log.get(ConsoleSink.class);
     private long processed;
@@ -60,8 +60,8 @@ public class ConsoleSink extends RichSinkFunction<Source_Event> {
 
     // invoke method
     @Override
-    public void invoke(Source_Event input, Context context) throws Exception {
-        long timestamp = input.ts;
+    public void invoke(Event input, Context context) throws Exception {
+        long timestamp = input.f2;
         //LOG.info("latency:" + ((System.nanoTime() - timestamp)/ 1e6));
         //int value = input.value;
         //int key = input.key;
