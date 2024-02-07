@@ -1,3 +1,26 @@
+/**************************************************************************************
+ *  Copyright (c) 2024- Gabriele Mencagli and Yuriy Rymarchuk
+ *  
+ *  This file is part of IntervalJoinBenchmarks.
+ *  
+ *  IntervalJoinBenchmarks is free software dual licensed under the GNU LGPL or MIT License.
+ *  You can redistribute it and/or modify it under the terms of the
+ *    * GNU Lesser General Public License as published by
+ *      the Free Software Foundation, either version 3 of the License, or
+ *      (at your option) any later version
+ *    OR
+ *    * MIT License: https://github.com/DropB1t/IntervalJoinBenchmarks/blob/main/LICENSE
+ *  
+ *  IntervalJoinBenchmarks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *  You should have received a copy of the GNU Lesser General Public License and
+ *  the MIT License along with WindFlow. If not, see <http://www.gnu.org/licenses/>
+ *  and <http://opensource.org/licenses/MIT/>.
+ **************************************************************************************
+ */
+
 package join;
 
 import org.apache.flink.configuration.Configuration;
@@ -41,7 +64,7 @@ public class IntervalJoin extends ProcessJoinFunction<Event, Event, Event> {
             int id = getRuntimeContext().getIndexOfThisSubtask();
             int n = getRuntimeContext().getNumberOfParallelSubtasks();
             long t_elapsed = (t_end - t_start) / 1000000; // elapsed time in milliseconds
-            LOG.info("[Join] " + id + "/" + n + " execution time: " + t_elapsed +
+            LOG.info("[Join] " + (id+1) + "/" + n + " execution time: " + t_elapsed +
                     " ms, processed: " + processed +
                     ", bandwidth: " + Math.floor(processed / ((double)t_elapsed / 1000)) +  // tuples per second
                     " tuples/s");

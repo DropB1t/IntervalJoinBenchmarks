@@ -1,17 +1,17 @@
 /**************************************************************************************
- *  Copyright (c) 2019- Gabriele Mencagli and Alessandra Fais
+ *  Copyright (c) 2024- Gabriele Mencagli and Yuriy Rymarchuk
  *  
- *  This file is part of StreamBenchmarks.
+ *  This file is part of IntervalJoinBenchmarks.
  *  
- *  StreamBenchmarks is free software dual licensed under the GNU LGPL or MIT License.
+ *  IntervalJoinBenchmarks is free software dual licensed under the GNU LGPL or MIT License.
  *  You can redistribute it and/or modify it under the terms of the
  *    * GNU Lesser General Public License as published by
  *      the Free Software Foundation, either version 3 of the License, or
  *      (at your option) any later version
  *    OR
- *    * MIT License: https://github.com/ParaGroup/StreamBenchmarks/blob/master/LICENSE.MIT
+ *    * MIT License: https://github.com/DropB1t/IntervalJoinBenchmarks/blob/main/LICENSE
  *  
- *  StreamBenchmarks is distributed in the hope that it will be useful,
+ *  IntervalJoinBenchmarks is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
@@ -31,8 +31,8 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 
 /** 
- *  @author  Gabriele Mencagli
- *  @version August 2019
+ *  @author  Gabriele Mencagli and Yuriy Rymarchuk
+ *  @version August 2024
  *  
  *  Sink node that receives and prints the results.
  */ 
@@ -50,7 +50,6 @@ public class ConsoleSink extends RichSinkFunction<Event> {
         samplingRate = _samplingRate;
     }
 
-    // open method
     @Override
     public void open(Configuration parameters) throws Exception {
         t_start = System.nanoTime(); // bolt start time in nanoseconds
@@ -58,7 +57,6 @@ public class ConsoleSink extends RichSinkFunction<Event> {
         latency = new Sampler(samplingRate);
     }
 
-    // invoke method
     @Override
     public void invoke(Event input, Context context) throws Exception {
         long timestamp = input.f2;
@@ -73,7 +71,6 @@ public class ConsoleSink extends RichSinkFunction<Event> {
         t_end = System.nanoTime();
     }
 
-    // close method
     @Override
     public void close() {
         if (processed == 0) {
