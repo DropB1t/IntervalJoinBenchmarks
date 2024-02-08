@@ -42,14 +42,15 @@ const struct option long_opts[] = {
         {"sampling", REQUIRED, 0, 's'},   // predictor parallelism degree
         {"batch", REQUIRED, 0, 'b'},
         {"parallelism", REQUIRED, 0, 'p'},        // pipe end (sink) parallelism degree
-        {"type", REQUIRED, 0, 't'},        // type of test to run
+        {"type", REQUIRED, 0, 't'},         // type of test to run
+        {"mode", REQUIRED, 0, 'm'},         // mode of interval join to run
         {"lower", REQUIRED, 0, 'l'},        // lower bound of interval
         {"upper", REQUIRED, 0, 'u'},        // upper bound of interval
         {"chaining", NONE, 0, 'c'},
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > -l [lower bound in ms] -u [upper bound in ms] [--chaining]";
+const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > --mode < k | d > -l [lower bound in ms] -u [upper bound in ms] [--chaining]";
 
 // information about application
 const string rsource_str = "  * rsource parallelism degree: ";

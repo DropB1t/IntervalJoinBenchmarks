@@ -7,7 +7,7 @@ OUT_DIR         = ../bin
 CXX             = g++
 CXXFLAGS        = -std=c++17
 INCLUDES        = -I $(FF_ROOT) -I $(WF_INCLUDES) -I $(INCLUDE_DIR)
-MACRO           = -DFF_BOUNDED_BUFFER -DDEFAULT_BUFFER_CAPACITY=32786 -DNDEBUG
+MACRO           = -DFF_BOUNDED_BUFFER -DDEFAULT_BUFFER_CAPACITY=32786 -DNDEBUG -DWF_JOIN_STATS
 OPTFLAGS        = -g -O3 -finline-functions
 LDFLAGS         = -pthread
 

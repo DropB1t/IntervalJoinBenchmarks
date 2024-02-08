@@ -45,6 +45,7 @@ const string join_name = "join";
 const string sink_name = "sink";
 
 static const char *types_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)", "Rovio Dataset", "Stock Dataset"};
+static const char *modes_str[] = {"Key based Parallelism", "Data based Parallelism"};
 
 // path of the dataset to be used
 const string rovio_path = "../../datasets/rovio/1000ms_1t.txt";

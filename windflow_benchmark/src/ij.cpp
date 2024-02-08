@@ -51,6 +51,12 @@ typedef enum
     STOCK_TEST
 } test_types;
 
+typedef enum
+{
+    KEY_BASED,
+    DATA_BASED
+} test_mode;
+
 atomic<long> sent_tuples; // total number of tuples sent by all the sources
 atomic<long> total_bytes; // total number of bytes processed by the system
 
@@ -134,14 +140,15 @@ int main(int argc, char *argv[])
 
     string file_path;
     test_types type;
+    test_mode mode;
 
     size_t rsource_par_deg = 0;
     size_t lsource_par_deg = 0;
     size_t join_par_deg = 0;
     size_t sink_par_deg = 0;
 
-    size_t lower_bound = 0;
-    size_t upper_bound = 0;
+    int64_t lower_bound = 0;
+    int64_t upper_bound = 0;
 
     sent_tuples = 0;
     total_bytes = 0;
@@ -153,8 +160,8 @@ int main(int argc, char *argv[])
     size_t batch_size = 0;
     size_t num_keys = 0;
 
-    if (argc == 17 || argc == 18) {
-        while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:l:u:c:", long_opts, &index)) != -1) {
+    if (argc == 19 || argc == 20) {
+        while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:l:u:c:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'r': {
                     rate = atoi(optarg);
@@ -206,6 +213,15 @@ int main(int argc, char *argv[])
                     } else { type = UNIFORM_SYNTHETIC; }
                     break;
                 }
+                case 'm': {
+                    string str_mode(optarg);
+                    if (str_mode == "k") {
+                        mode = KEY_BASED;
+                    } else if (str_mode == "d") {
+                        mode = DATA_BASED;
+                    } else { mode = KEY_BASED; }
+                    break;
+                }
                 case 'l': {
                     lower_bound = atoi(optarg);
                     break;
@@ -253,11 +269,14 @@ int main(int argc, char *argv[])
     }
     cout << "  * sampling: " << sampling << endl;
     cout << "  * batch size: " << batch_size << endl;
+    cout << "  * lower bound: " << lower_bound << endl;
+    cout << "  * upper bound: " << upper_bound << endl;
     if (type == UNIFORM_SYNTHETIC || type == ZIPF_SYNTHETIC) {
         cout << "  * data_size: " << data_size << endl;
         cout << "  * number of keys: " << num_keys << endl;
     }
     cout << "  * type: " << types_str[type] << endl;
+    cout << "  * mode: " << modes_str[mode] << endl;
     cout << rsource_str << rsource_par_deg << endl;
     cout << lsource_str << lsource_par_deg << endl;
     cout << join_str << join_par_deg << endl;
@@ -315,14 +334,20 @@ int main(int argc, char *argv[])
                     .build();
 
     Interval_Join_Functor join_functor(app_start_time);
-    Interval_Join join = Interval_Join_Builder(join_functor)
+    Interval_Join_Builder join_build = Interval_Join_Builder(join_functor)
                             .withParallelism(join_par_deg)
                             .withName(join_name)
                             .withOutputBatchSize(batch_size)
                             .withKeyBy([](const tuple_t &t) -> size_t { return t.key; })
-                            .withBoundaries(milliseconds(lower_bound), milliseconds(upper_bound))
-                            .withKPMode()
-                            .build();
+                            .withBoundaries(milliseconds(lower_bound), milliseconds(upper_bound));
+
+    if (mode == test_mode::KEY_BASED) {
+        join_build.withKPMode();
+    } else {
+        join_build.withDPSMode();
+    }
+    
+    Interval_Join join = join_build.build();
 
     Sink_Functor sink_functor(sampling, app_start_time);
     Sink sink = Sink_Builder(sink_functor)
