@@ -88,7 +88,7 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim, test_ty
                 vector<string> tokens = split(line, delim);
 
                 size_t key = stoul(tokens.at(0));
-                int64_t value = stol((type == test_types::STOCK_TEST ? tokens.at(0) : tokens.at(2)));
+                int64_t value = stol((type == test_types::STOCK_TEST ? tokens.at(1) : tokens.at(2)));
 
                 dataset.push_back(tuple_t(key, value));
             }
