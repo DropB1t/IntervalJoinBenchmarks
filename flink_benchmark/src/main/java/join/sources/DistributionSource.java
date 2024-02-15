@@ -24,8 +24,8 @@
 package join.sources;
 
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.util.XORShiftRandom;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -33,13 +33,11 @@ import join.Event;
 import util.Sampler;
 import util.ThroughputCounter;
 
-import java.util.Random;
-
 public class DistributionSource extends RichParallelSourceFunction<Event> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DistributionSource.class);
     
-    static final int VALUE = 10;
+    static final int VALUE = 5;
 
     private long t_start;
     private long t_end;
@@ -59,14 +57,14 @@ public class DistributionSource extends RichParallelSourceFunction<Event> {
 
     private long ts = 1704106800000L; // January 1, 2024 12:00:00 AM in ms
     private final int offset_seed;
-    private Random offset;
+    private MersenneTwister offset;
 
-    public DistributionSource(long _runtime, int _gen_rate, int _offset_seed, int[] _keys, int _data_size) {
+    public DistributionSource(long _runtime, int _gen_rate, int _offset_seed, int[] _keys) {
         this.runtime = (long) (_runtime * 1e9); // ns
         this.offset_seed = _offset_seed;
         this.gen_rate = _gen_rate;
 
-        this.data_size = _data_size;
+        this.data_size = _keys.length;
         this.keys = _keys;
 
         index = 0;
@@ -78,33 +76,37 @@ public class DistributionSource extends RichParallelSourceFunction<Event> {
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
         throughput_sampler = new Sampler();
-        this.offset = new XORShiftRandom(offset_seed);
+        this.offset = new MersenneTwister(offset_seed);
     }
 
     @Override
     public void run(final SourceContext<Event> ctx) throws Exception {
         this.t_start = System.nanoTime();
-
         // generation loop
         while ((System.nanoTime() - this.t_start < runtime) && running) {
-            ts += offset.nextInt(500);
             Event tuple = new Event();
             tuple.f0 = keys[index];
             tuple.f1 = VALUE;
             tuple.f2 = System.nanoTime();
             ctx.collectWithTimestamp(tuple, ts);
+            /*
+            if (generated < 15)
+                LOG.info("  * key-> " + tuple.f0 + ", ts-> " + ts);
+            */
             generated++;
             index++;
-
+            
             if (gen_rate != 0) { // not full speed
                 long delay_nsec = (long) ((1.0d / gen_rate) * 1e9);
                 active_delay(delay_nsec);
             }
-
+            
             if (index >= data_size) { // check the dataset boundaries
                 index = 0;
                 nt_execution++;
             }
+
+            ts += offset.nextInt(500);
         }
 
         // terminate the generation

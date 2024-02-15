@@ -33,16 +33,21 @@ public interface IntervalJoinConstants{
     String HELP = "--help";
     String DEFAULT_PROPERTIES = "/ij.properties";
     String DEFAULT_TOPO_NAME = "IntervalJoinBenchmark";
+    String DEFAULT_SEPARATOR = "\\|";
 
     interface Conf {
+        String RSYNT_UNIFORM_PATH = "ij.source.r_synthetic_uniform_path";
+        String LSYNT_UNIFORM_PATH = "ij.source.l_synthetic_uniform_path";
+        String RSYNT_ZIPF_PATH = "ij.source.r_synthetic_zipf_path";
+        String LSYNT_ZIPF_PATH = "ij.source.l_synthetic_zipf_path";
         String RSTOCK_PATH = "ij.source.r_stock_path";
         String LSTOCK_PATH = "ij.source.l_stock_path";
         String ROVIO_PATH = "ij.source.rovio_path";
         String RUNTIME = "ij.runtime_sec";
-        String DATA_SIZE = "ij.data_size";
         String LOWER_BOUND = "ij.lower_bound";
         String UPPER_BOUND = "ij.upper_bound";
-        String NUM_KEYS = "ij.num_keys";
+        String DATA_SIZE = "ij.data_size";  // TODO to remove
+        String NUM_KEYS = "ij.num_keys";    // TODO to remove
         String SEED = "ij.seed";
         String RSEED = "ij.ts_rseed";
         String LSEED = "ij.ts_lseed";

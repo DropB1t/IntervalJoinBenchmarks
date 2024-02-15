@@ -59,11 +59,13 @@ public class ConsoleSink extends RichSinkFunction<Event> {
 
     @Override
     public void invoke(Event input, Context context) throws Exception {
+        //int key = input.f0;
+        //int value = input.f1;
         long timestamp = input.f2;
-        //LOG.info("latency:" + ((System.nanoTime() - timestamp)/ 1e6));
-        //int value = input.value;
-        //int key = input.key;
-        
+        /*         
+        if (processed < 15)
+            LOG.info("  * key-> " + key + ", ts-> " + context.timestamp());
+        */
         // evaluate latency
         long now = System.nanoTime();
         latency.add((double)((now - timestamp)/ 1e6), System.nanoTime()); // ms precision
@@ -78,7 +80,7 @@ public class ConsoleSink extends RichSinkFunction<Event> {
         }
         else {
             long t_elapsed = (t_end - t_start) / 1000000; // elapsed time in milliseconds
-            //LOG.info("exec time " + t_elapsed + " | in second " + ((double)t_elapsed / 1000) );
+            //LOG.info("exec time " + t_elapsed + " || in seconds " + ((double)t_elapsed / 1000) );
             LOG.info("[Sink] execution time: " + t_elapsed +
                     " ms, processed: " + processed +
                     ", bandwidth: " + Math.floor(processed / ((double)t_elapsed / 1000)) +  // tuples per second

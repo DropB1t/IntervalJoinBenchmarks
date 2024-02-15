@@ -32,7 +32,7 @@ import util.Log;
 
 public class IntervalJoin extends ProcessJoinFunction<Event, Event, Event> {
 
-    private static final Logger LOG = Log.get(ConsoleSink.class);
+    private static final Logger LOG = Log.get(IntervalJoin.class);
     private long processed;
     private long t_start;
     private long t_end;
@@ -45,7 +45,7 @@ public class IntervalJoin extends ProcessJoinFunction<Event, Event, Event> {
 
     @Override
     public void processElement(Event first, Event second, Context ctx, Collector<Event> out) throws Exception {
-        //LOG.info(first.key + " | " + second.key);
+        //LOG.info(first.f0 + " | " + second.f0);
         Event out_t = new Event();
         out_t.f0 = first.f0;
         out_t.f1 = Integer.valueOf(first.f1+second.f1);

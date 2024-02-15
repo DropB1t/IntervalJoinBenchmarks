@@ -23,13 +23,14 @@
 
 package join;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import org.apache.commons.math3.distribution.ZipfDistribution;
-import org.apache.commons.math3.random.Well19937c;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.eventtime.AscendingTimestampsWatermarks;
 import org.apache.flink.api.common.eventtime.TimestampAssigner;
@@ -48,7 +49,6 @@ import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunctio
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.slf4j.Logger;
 
-import join.sources.DistributionSource;
 import join.sources.FileSource;
 import constants.IntervalJoinConstants;
 import constants.IntervalJoinConstants.Conf;
@@ -58,9 +58,19 @@ import util.ThroughputCounter;
 
 public class IntervalJoinBench {
     private static final Logger LOG = Log.get(IntervalJoinBench.class);
+    
+    public static enum testType {
+        UNIFORM_SYNTHETIC,
+        ZIPF_SYNTHETIC,
+        ROVIO_TEST,
+        STOCK_TEST;
+    }
+
+    private static testType type;
+    private static int dataSize = 0;
+    private static int numKeys = 0;
 
     public static void main(String[] args) throws Exception {
-
         String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource1,nSource2,nInterval-Join,nSink> --type < su | sz | rd | sd > [--chaining]\n" + 
                        "Types:\n\tsu = synthetic dataset with uniform distribution" + 
                        "\n\tsz = synthetic dataset with zipf distribution" + 
@@ -86,14 +96,14 @@ public class IntervalJoinBench {
         }
         
         int runtime = conf.getInteger(ConfigOptions.key(Conf.RUNTIME).intType().defaultValue(60)); // runtime in seconds - default 1 min
-        int dataSize = conf.getInteger(ConfigOptions.key(Conf.DATA_SIZE).intType().defaultValue(2000000));
+        //int dataSize = conf.getInteger(ConfigOptions.key(Conf.DATA_SIZE).intType().defaultValue(2000000));
         
         int lower_bound = conf.getInteger(ConfigOptions.key(Conf.LOWER_BOUND).intType().defaultValue(-500));
         int upper_bound = conf.getInteger(ConfigOptions.key(Conf.UPPER_BOUND).intType().defaultValue(500));
-        int num_keys = conf.getInteger(ConfigOptions.key(Conf.NUM_KEYS).intType().defaultValue(10));
+        //int num_keys = conf.getInteger(ConfigOptions.key(Conf.NUM_KEYS).intType().defaultValue(10));
 
-        int rseed = conf.getInteger(ConfigOptions.key(Conf.RSEED).intType().defaultValue(12345));
-        int lseed = conf.getInteger(ConfigOptions.key(Conf.LSEED).intType().defaultValue(54321));
+        //int rSeed = conf.getInteger(ConfigOptions.key(Conf.RSEED).intType().defaultValue(12345));
+        //int lSeed = conf.getInteger(ConfigOptions.key(Conf.LSEED).intType().defaultValue(54321));
         
         ParameterTool argsTool = ParameterTool.fromArgs(args);
 
@@ -105,8 +115,25 @@ public class IntervalJoinBench {
 
         int rate = argsTool.getInt("rate", 0);
         int samplingRate = argsTool.getInt("sampling", 100);
-        String type = argsTool.get("type", "su");
         boolean chaining = argsTool.has("chaining");
+
+        String typeStr = argsTool.get("type", "su");
+        switch (typeStr) {
+            case "rd":
+                type = testType.ROVIO_TEST;
+                break;
+            case "sd":
+                type = testType.STOCK_TEST;
+                break;
+            case "sz":
+                type = testType.ZIPF_SYNTHETIC;
+                break;
+            case "su":
+                type = testType.UNIFORM_SYNTHETIC;
+            default:
+                break;
+        }
+
 
         int[] parallelism_degs = ToIntArray(argsTool.get("parallelism").split(","));
         if (parallelism_degs.length != 4) {
@@ -119,35 +146,38 @@ public class IntervalJoinBench {
         int join_deg = parallelism_degs[2];
         int sink_deg = parallelism_degs[3];
 
-        int distribution_seed = conf.getInteger(ConfigOptions.key(Conf.SEED).intType().defaultValue(441287210));
-        double exponent = conf.getDouble(ConfigOptions.key(Conf.ZIPF_EXPONENT).doubleType().defaultValue(1.1));
-        Well19937c rnd = new Well19937c(distribution_seed);
+        //int distribution_seed = conf.getInteger(ConfigOptions.key(Conf.SEED).intType().defaultValue(441287210));
+        //double exponent = conf.getDouble(ConfigOptions.key(Conf.ZIPF_EXPONENT).doubleType().defaultValue(1.1));
 
+        String rpath, lpath;
+        ArrayList<Event> rdataset, ldataset;
         RichParallelSourceFunction<Event> orangeSource, greenSource;
+
         switch (type) {
-            case "sz":
-                ZipfDistribution zDistribution = new ZipfDistribution(rnd, num_keys, exponent);
-                orangeSource = new DistributionSource(runtime, rate, rseed, zDistribution.sample(dataSize), dataSize);
-                greenSource = new DistributionSource(runtime, rate, lseed, zDistribution.sample(dataSize), dataSize);
+            case ZIPF_SYNTHETIC:
+                rpath = conf.get(ConfigOptions.key(Conf.RSYNT_ZIPF_PATH).stringType().noDefaultValue());
+                lpath = conf.get(ConfigOptions.key(Conf.LSYNT_ZIPF_PATH).stringType().noDefaultValue());
                 break;
-            case "rd":
-                String file_path = conf.get(ConfigOptions.key(Conf.ROVIO_PATH).stringType().noDefaultValue());
-                orangeSource = new FileSource(file_path, runtime, rate, rseed);
-                greenSource = new FileSource(file_path, runtime, rate, lseed);
+            case ROVIO_TEST:
+                rpath = conf.get(ConfigOptions.key(Conf.ROVIO_PATH).stringType().noDefaultValue());
+                lpath = conf.get(ConfigOptions.key(Conf.ROVIO_PATH).stringType().noDefaultValue());
                 break;
-            case "sd":
-                String rpath = conf.get(ConfigOptions.key(Conf.RSTOCK_PATH).stringType().noDefaultValue());
-                String lpath = conf.get(ConfigOptions.key(Conf.LSTOCK_PATH).stringType().noDefaultValue());
-                orangeSource = new FileSource(rpath, runtime, rate, rseed);
-                greenSource = new FileSource(lpath, runtime, rate, lseed);
+            case STOCK_TEST:
+                rpath = conf.get(ConfigOptions.key(Conf.RSTOCK_PATH).stringType().noDefaultValue());
+                lpath = conf.get(ConfigOptions.key(Conf.LSTOCK_PATH).stringType().noDefaultValue());
                 break;
-            case "su":
+            case UNIFORM_SYNTHETIC:
             default:
-                UniformIntegerDistribution uDistribution = new UniformIntegerDistribution(rnd, 1, num_keys);
-                orangeSource = new DistributionSource(runtime, rate, rseed, uDistribution.sample(dataSize), dataSize);
-                greenSource = new DistributionSource(runtime, rate, lseed, uDistribution.sample(dataSize), dataSize);
+                rpath = conf.get(ConfigOptions.key(Conf.RSYNT_UNIFORM_PATH).stringType().noDefaultValue());
+                lpath = conf.get(ConfigOptions.key(Conf.LSYNT_UNIFORM_PATH).stringType().noDefaultValue());
                 break;
         }
+
+        rdataset = parseDataset(rpath, IntervalJoinConstants.DEFAULT_SEPARATOR);
+        ldataset = parseDataset(lpath, IntervalJoinConstants.DEFAULT_SEPARATOR);
+
+        orangeSource = new FileSource(runtime, rate, rdataset);
+        greenSource = new FileSource(runtime, rate, ldataset);
 
         // Set up the streaming execution Environment
         Configuration conf_flink = new Configuration();
@@ -178,16 +208,16 @@ public class IntervalJoinBench {
 
         String print_type = "";
         switch (type) {
-            case "sz":
+            case ZIPF_SYNTHETIC:
                 print_type = "Synthetic Test (ZipF Distribution)";
                 break;
-            case "rd":
+            case ROVIO_TEST:
                 print_type = "Rovio Dataset";
                 break;
-            case "sd":
+            case STOCK_TEST:
                 print_type = "Stock Dataset";
                 break;
-            case "su":
+            case UNIFORM_SYNTHETIC:
             default:
                 print_type = "Synthetic Test (Uniform Distribution)";
                 break;
@@ -195,13 +225,13 @@ public class IntervalJoinBench {
 
         String synthetic_stats =
         "  * data_size: " + dataSize + "\n" +
-        "  * num_keys: " + num_keys + "\n";
+        "  * num_keys: " + numKeys + "\n";
 
         // print app info
         LOG.info("Submiting " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " with parameters:\n\n" +
         "  * rate: " + ((rate == 0) ? "full_speed" : rate) + " tuples/second\n" +
         "  * sampling: " + samplingRate + "\n" +
-        ((type.equals("su") || type.equals("sz")) ? synthetic_stats : "") +
+        (( type == testType.UNIFORM_SYNTHETIC || type == testType.ZIPF_SYNTHETIC ) ? synthetic_stats : "") +
         "  * \n" +
         "  * source1: " + source1_deg + "\n" +
         "  * source2: " + source2_deg + "\n" +
@@ -248,6 +278,71 @@ public class IntervalJoinBench {
 
     private static int[] ToIntArray(String[] stringArray) {
         return Stream.of(stringArray).mapToInt(Integer::parseInt).toArray();
+    }
+
+    private static ArrayList<Event> parseDataset(String _file_path, String splitter) {
+        ArrayList<Event> ds = new ArrayList<>();
+        try {
+            Scanner scan = new Scanner(new File(_file_path));
+            if (type == testType.UNIFORM_SYNTHETIC || type == testType.ZIPF_SYNTHETIC) {
+                if (scan.hasNextLine()) {
+                    String par_line = scan.nextLine();
+                    String[] params = par_line.split(splitter);
+                    if (params.length != 2) {
+                        LOG.info("Error in parsing Syntethic parameters");
+                        System.exit(1);
+                    }
+                    numKeys = Integer.valueOf(params[0]);
+                    dataSize = Integer.valueOf(params[1]);
+                }
+            }
+            while (scan.hasNextLine()) {
+                String line = scan.nextLine();
+                if (line.isBlank()) { continue; }
+                Event tuple = new Event();
+
+                String[] fields = line.split(splitter); // regex quantifier (matches one or many split char)
+                switch (type) {
+                    case UNIFORM_SYNTHETIC:
+                    case ZIPF_SYNTHETIC:
+                        if (fields.length != 2) {
+                            LOG.info("Error in parsing Syntethic tuple");
+                            System.exit(1);
+                        }
+                        tuple.f0 = Integer.valueOf(fields[0]); // Key
+                        tuple.f1 = 5;                          // Value
+                        tuple.f2 = Long.valueOf(fields[1]);    // Timestamp
+                        break;
+                    case ROVIO_TEST:
+                        if (fields.length != 4) {
+                            LOG.info("Error in parsing tuple");
+                            System.exit(1);
+                        }
+                        tuple.f0 = Integer.valueOf(fields[0]);  // Key
+                        tuple.f1 = Integer.valueOf(fields[2]);  // Value
+                        tuple.f2 = 0L;                          // Timestamp
+                        break;
+                    case STOCK_TEST:
+                        if (fields.length != 2) {
+                            LOG.info("Error in parsing tuple");
+                            System.exit(1);
+                        }
+                        tuple.f0 = Integer.valueOf(fields[0]);  // Key
+                        tuple.f1 = Integer.valueOf(fields[1]);  // Value
+                        tuple.f2 = 0L;                          // Timestamp
+                        break;
+                }
+                ds.add(tuple);
+            }
+            dataSize = ds.size();
+            scan.close();
+            scan = null;
+        }
+        catch (FileNotFoundException | NullPointerException e) {
+            LOG.error("The file {} does not exists", _file_path);
+            throw new RuntimeException("The file '"  + _file_path + "' does not exists");
+        }
+        return ds;
     }
 
     private static class DataKeySelector implements KeySelector<Event, Integer> {

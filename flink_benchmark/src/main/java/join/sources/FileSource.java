@@ -25,7 +25,6 @@ package join.sources;
 
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.util.XORShiftRandom;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -33,11 +32,7 @@ import join.Event;
 import util.Sampler;
 import util.ThroughputCounter;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Random;
-import java.util.Scanner;
 
 public class FileSource extends RichParallelSourceFunction<Event> {
 
@@ -46,9 +41,7 @@ public class FileSource extends RichParallelSourceFunction<Event> {
     private long t_start;
     private long t_end;
 
-    private transient final String file_path;
-    private ArrayList<Integer> keys;
-    private ArrayList<Integer> values;
+    private ArrayList<Event> dataset;
     private int data_size;
     
     private final long runtime;
@@ -62,29 +55,22 @@ public class FileSource extends RichParallelSourceFunction<Event> {
     private Sampler throughput_sampler;
 
     private long ts = 1704106800000L; // January 1, 2024 12:00:00 AM in ms
-    private final int offset_seed;
-    private Random offset;
 
-    public FileSource(String path, long _runtime, int _gen_rate, int _offset_seed) {
+    public FileSource(long _runtime, int _gen_rate, ArrayList<Event> _dataset) {
         this.runtime = (long) (_runtime * 1e9); // ns
-        this.offset_seed = _offset_seed;
         this.gen_rate = _gen_rate;
-        this.file_path = path;
 
-        keys = new ArrayList<>();
-        values = new ArrayList<>();
+        this.dataset = _dataset;
         
         index = 0;
         generated = 0;
-        data_size = 0;
+        data_size = dataset.size();
         nt_execution = 0;
-        parseDataset();
     }
     
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        this.offset = new XORShiftRandom(offset_seed);
         throughput_sampler = new Sampler();
     }
 
@@ -94,15 +80,21 @@ public class FileSource extends RichParallelSourceFunction<Event> {
 
         // generation loop
         while ((System.nanoTime() - this.t_start < runtime) && running) {
-            ts += offset.nextInt(500);
-            Event tuple = new Event();
-            tuple.f0 = keys.get(index);
-            tuple.f1 = values.get(index);
-            tuple.f2 = System.nanoTime();
-            ctx.collectWithTimestamp(tuple, ts);
+            Event tuple = dataset.get(index);
+            ts += tuple.f2 != 0L ? tuple.f2 : 500L;
+            
+            Event input = new Event();
+            input.f0 = tuple.f0;
+            input.f1 = tuple.f1;
+            input.f2 = System.nanoTime();
+            ctx.collectWithTimestamp(input, ts);
+            /* 
+            if (generated < 15)
+                LOG.info("  * key-> " + tuple.f0 + ", ts-> " + ts);
+             */
             generated++;
             index++;
-
+            
             if (gen_rate != 0) { // limit generation rate with active delay
                 long delay_nsec = (long) ((1.0d / gen_rate) * 1e9);
                 active_delay(delay_nsec);
@@ -118,35 +110,6 @@ public class FileSource extends RichParallelSourceFunction<Event> {
         running = false;
         this.t_end = System.nanoTime();
         ThroughputCounter.add(generated);
-    }
-
-    // parseDataset method
-    private void parseDataset() {
-        try {
-            Scanner scan = new Scanner(new File(file_path));
-            while (scan.hasNextLine()) {
-                String tuple = scan.nextLine();
-                if (tuple.isBlank()) { break; }
-                String[] fields = tuple.split("\\|"); // regex quantifier (matches one or many |)
-                if (fields.length == 2) {
-                    keys.add(Integer.valueOf(fields[0]));
-                    values.add(Integer.valueOf(fields[1]));
-                    //LOG.info("[Source] tuple: key " + fields[0] + ", value " + fields[1]);
-                } else if (fields.length == 4) {
-                    keys.add(Integer.valueOf(fields[0]));
-                    values.add(Integer.valueOf(fields[2]));
-                    //LOG.info("[Source] tuple: key " + fields[0] + ", value " + fields[2]);
-                } else
-                    LOG.debug("[Source] bad formed record");
-            }
-            data_size = keys.size();
-            scan.close();
-            scan = null;
-        }
-        catch (FileNotFoundException | NullPointerException e) {
-            LOG.error("The file {} does not exists", file_path);
-            throw new RuntimeException("The file '"  + file_path + "' does not exists");
-        }
     }
 
     /**
