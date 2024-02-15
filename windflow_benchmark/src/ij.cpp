@@ -35,7 +35,6 @@
 
 #include "util/constants.hpp"
 #include "util/cli_util.hpp"
-#include "util/zipfian_int_distribution.h"
 #include "util/tuple.hpp"
 
 using namespace std;
