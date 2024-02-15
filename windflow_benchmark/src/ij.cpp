@@ -60,6 +60,10 @@ typedef enum
 atomic<long> sent_tuples; // total number of tuples sent by all the sources
 atomic<long> total_bytes; // total number of bytes processed by the system
 
+test_types type;
+size_t num_keys = 0;
+size_t data_size = 0;
+
 vector<string> split(const string &target, const char delim)
 {
     string temp;
@@ -74,60 +78,72 @@ vector<string> split(const string &target, const char delim)
     return result;
 }
 
-vector<tuple_t> parse_dataset(const string &file_path, const char delim, test_types type)
+vector<tuple_t> parse_dataset(const string &file_path, const char delim)
 {
     vector<tuple_t> dataset;
     ifstream file(file_path);
+
     if (file.is_open())
     {
         string line;
+        vector<string> tokens;
+
+        // First line - Syntethic Parameters
+        if (type == test_types::UNIFORM_SYNTHETIC ||type == test_types::ZIPF_SYNTHETIC)
+        {
+            getline(file, line);
+            tokens = split(line, delim);
+            if (tokens.size() != 2) {
+                cout << "Error in parsing Syntethic parameters" << endl;
+                exit(EXIT_FAILURE);
+            }
+            num_keys = stoul(tokens[0]);
+            data_size = stoul(tokens[1]);
+        }
+
+        // Parsing tuples
+        size_t key;
+        int64_t value;
+        uint64_t ts;
         while (getline(file, line))
         {
-            if (!line.empty())
-            {
-                vector<string> tokens = split(line, delim);
-
-                size_t key = stoul(tokens.at(0));
-                int64_t value = stol((type == test_types::STOCK_TEST ? tokens.at(1) : tokens.at(2)));
-
-                dataset.push_back(tuple_t(key, value));
+            if (!line.empty()) {
+                tokens = split(line, delim);
+                
+                switch (type)
+                {
+                    case UNIFORM_SYNTHETIC:
+                    case ZIPF_SYNTHETIC:
+                        if (tokens.size() != 2) {
+                            cout << "Error in parsing Syntethic tuple" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        key = stoul(tokens[0]);
+                        ts = stoul(tokens[1]);
+                        dataset.push_back(tuple_t(key, ts));
+                        break;
+                    case ROVIO_TEST:
+                        if (tokens.size() != 4) {
+                            cout << "Error in parsing tuple" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        key = stoul(tokens[0]);
+                        value = stol(tokens[2]);
+                        dataset.push_back(tuple_t(key, value));
+                        break;
+                    case STOCK_TEST:
+                        if (tokens.size() != 2) {
+                            cout << "Error in parsing tuple" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        key = stoul(tokens[0]);
+                        value = stol(tokens[1]);
+                        dataset.push_back(tuple_t(key, value));
+                        break;
+                }
             }
         }
         file.close();
-    }
-    return dataset;
-}
-
-vector<tuple_t> create_tuples_uniform_keys(int num_keys, int size, uint seed)
-{
-    vector<tuple_t> dataset;
-
-    mt19937 rng;
-    rng.seed(seed);
-
-    auto dist = uniform_int_distribution<int>(1, num_keys);
-
-    for (int i = 0; i < size; i++)
-    {
-        tuple_t t(dist(rng));
-        dataset.push_back(t);
-    }
-    return dataset;
-}
-
-vector<tuple_t> create_tuples_zipf_keys(int num_keys, int size, uint seed)
-{
-    vector<tuple_t> dataset;
-
-    mt19937 rng;
-    rng.seed(seed);
-
-    auto dist = zipfian_int_distribution<int>(1, num_keys, zipf_exponent);
-
-    for (int i = 0; i < size; i++)
-    {
-        tuple_t t(dist(rng));
-        dataset.push_back(t);
     }
     return dataset;
 }
@@ -138,8 +154,8 @@ int main(int argc, char *argv[])
     int option = 0;
     int index = 0;
 
-    string file_path;
-    test_types type;
+    string rpath;
+    string lpath;
     test_mode mode;
 
     size_t rsource_par_deg = 0;
@@ -153,14 +169,12 @@ int main(int argc, char *argv[])
     sent_tuples = 0;
     total_bytes = 0;
 
+    size_t batch_size = 0;
     bool chaining = false;
     long sampling = 0;
     int rate = 0;
 
-    size_t batch_size = 0;
-    size_t num_keys = 0;
-
-    if (argc == 19 || argc == 20) {
+    if (argc == 17 || argc == 18) {
         while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:l:u:c:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'r': {
@@ -173,10 +187,6 @@ int main(int argc, char *argv[])
                 }
                 case 'b': {
                     batch_size = atoi(optarg);
-                    break;
-                }
-                case 'k': {
-                    num_keys = atoi(optarg);
                     break;
                 }
                 case 'p': {
@@ -204,13 +214,25 @@ int main(int argc, char *argv[])
                     string str_type(optarg);
                     if (str_type == "su") {
                         type = UNIFORM_SYNTHETIC;
+                        rpath = r_synthetic_uniform_path;
+                        lpath = l_synthetic_uniform_path;
                     } else if (str_type == "sz") {
                         type = ZIPF_SYNTHETIC;
+                        rpath = r_synthetic_zipf_path;
+                        lpath = l_synthetic_zipf_path;
                     } else if (str_type == "rd") {
                         type = ROVIO_TEST;
+                        rpath = rovio_path;
+                        lpath = rovio_path;
                     } else if (str_type == "sd") {
                         type = STOCK_TEST;
-                    } else { type = UNIFORM_SYNTHETIC; }
+                        rpath = r_stock_path;
+                        lpath = l_stock_path;
+                    } else {
+                        type = UNIFORM_SYNTHETIC;
+                        rpath = r_synthetic_uniform_path;
+                        lpath = l_synthetic_uniform_path;
+                    }
                     break;
                 }
                 case 'm': {
@@ -259,6 +281,11 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    // data pre-processing
+    vector<tuple_t> rdataset, ldataset;
+    rdataset = parse_dataset(rpath, split_char);
+    ldataset = parse_dataset(lpath, split_char);
+
     // display test configuration
     cout << app_descr << endl;
     if (rate != 0) {
@@ -290,43 +317,19 @@ int main(int argc, char *argv[])
     << "  * lsource +--+ \n"
     << "  * ==============================\n";
 
-    // data pre-processing
-    vector<tuple_t> rdataset, ldataset;
-
-    switch (type)
-    {
-        case ZIPF_SYNTHETIC:
-            rdataset = create_tuples_zipf_keys(num_keys, data_size, rseed);
-            ldataset = create_tuples_zipf_keys(num_keys, data_size, lseed);
-            break;
-        case ROVIO_TEST:
-            rdataset = parse_dataset(rovio_path, '|', ROVIO_TEST);
-            ldataset = parse_dataset(rovio_path, '|', ROVIO_TEST);
-            break;
-        case STOCK_TEST:
-            rdataset = parse_dataset(r_stock_path, '|', STOCK_TEST);
-            ldataset = parse_dataset(l_stock_path, '|', STOCK_TEST);
-            break;
-        case UNIFORM_SYNTHETIC:    
-        default:
-            rdataset = create_tuples_uniform_keys(num_keys, data_size, rseed);
-            ldataset = create_tuples_uniform_keys(num_keys, data_size, lseed);
-            break;
-    }
-
     /// application starting time
     unsigned long app_start_time = current_time_nsecs();
     Execution_Mode_t exec_mode = Execution_Mode_t::DEFAULT;
-
     PipeGraph topology(topology_name, exec_mode, Time_Policy_t::EVENT_TIME);
-    Source_Functor rsource_functor(rdataset, rate, app_start_time, batch_size, rseed, exec_mode);
+
+    Source_Functor rsource_functor(rdataset, rate, app_start_time, batch_size, exec_mode);
     Source rsource = Source_Builder(rsource_functor)
                     .withParallelism(rsource_par_deg)
                     .withName(r_source_name)
                     .withOutputBatchSize(batch_size)
                     .build();
 
-    Source_Functor lsource_functor(ldataset, rate, app_start_time, batch_size, lseed, exec_mode);
+    Source_Functor lsource_functor(ldataset, rate, app_start_time, batch_size, exec_mode);
     Source lsource = Source_Builder(lsource_functor)
                     .withParallelism(lsource_par_deg)
                     .withName(l_source_name)

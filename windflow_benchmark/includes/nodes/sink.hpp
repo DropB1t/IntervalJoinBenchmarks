@@ -66,21 +66,21 @@ public:
     // operator() method
     void operator()(optional<tuple_t> &t, RuntimeContext &rc)
     {
+        if (joined == 0) {
+            parallelism = rc.getParallelism();
+            replica_id = rc.getReplicaIndex();
+        }
         if (t) {
-            if (joined == 0) {
-                parallelism = rc.getParallelism();
-                replica_id = rc.getReplicaIndex();
-            }
             current_time = current_time_nsecs();
             unsigned long tuple_latency = (current_time - (*t).ts) / 1e06;
             latency_sampler.add(tuple_latency, current_time);
-            joined++;// tuples counter
-            bytes_sum += tuple_size;
 #if 0
-            if (joined < 16) {
-                cout << "Received tuple: key-> " << (*t).key << ", value-> " << (*t).value << endl;
+            if (joined < 15) {
+                cout << "Sink  * key-> " << (*t).key << ", ts-> " << rc.getCurrentTimestamp() << endl;
             }
 #endif
+            joined++;// tuples counter
+            bytes_sum += tuple_size;
         }
         else { // EOS
             double t_elapsed = static_cast<double>(current_time - app_start_time) / 1e09;

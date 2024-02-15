@@ -19,16 +19,19 @@
  *  the MIT License along with WindFlow. If not, see <http://www.gnu.org/licenses/>
  *  and <http://opensource.org/licenses/MIT/>.
  **************************************************************************************
- */
+*/
 
-#ifndef IJ_CLI_UTIL_HPP
-#define IJ_CLI_UTIL_HPP
+#ifndef GEN_CONSTANTS_HPP
+#define GEN_CONSTANTS_HPP
 
-#include<iomanip>
-#include<iostream>
-#include<string>
-#include<vector>
-#include<getopt.h>
+#include <iomanip>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <getopt.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "constants.hpp"
 
 using namespace std;
@@ -37,28 +40,30 @@ typedef enum { NONE, REQUIRED } opt_arg;    // an option can require one argumen
 
 const struct option long_opts[] = {
         {"help", NONE, 0, 'h'},
-        {"rate", REQUIRED, 0, 'r'},      // pipe start (source) parallelism degree
-        {"sampling", REQUIRED, 0, 's'},   // predictor parallelism degree
-        {"batch", REQUIRED, 0, 'b'},
-        {"parallelism", REQUIRED, 0, 'p'},        // pipe end (sink) parallelism degree
+        {"num_key", REQUIRED, 0, 'k'},
+        {"size", REQUIRED, 0, 's'},
         {"type", REQUIRED, 0, 't'},         // type of test to run
-        {"mode", REQUIRED, 0, 'm'},         // mode of interval join to run
-        {"lower", REQUIRED, 0, 'l'},        // lower bound of interval
-        {"upper", REQUIRED, 0, 'u'},        // upper bound of interval
-        {"chaining", NONE, 0, 'c'},
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > --mode < k | d > -l [lower bound in ms] -u [upper bound in ms] [--chaining]";
+const string command_help = "Parameters: --num_key <value> [--size <dataset_size>] --type < su | sz >";
 
-// information about application
-const string rsource_str = "  * rsource parallelism degree: ";
-const string lsource_str = "  * lsource parallelism degree: ";
-const string join_str = "  * join parallelism degree: ";
-const string sink_str = "  * sink parallelism degree: ";
+const string dataset_types = "Types:"
+                             "\n\tsu = synthetic dataset with uniform distribution"
+                             "\n\tsz = synthetic dataset with zipf distribution";
 
-const string app_descr = "Submiting IntervalJoinBenchmark with parameters:";
-const string app_error = "Error executing IntervalJoinBenchmark topology";
-const string app_termination = "Terminated execution of IntervalJoinBenchmark topology with cardinality ";
+const string parse_error = "Error in parsing the input arguments";
 
-#endif //IJ_CLI_UTIL_HPP
+const string gen_descr = "Generating dataset with submitted parameters:";
+
+std::string base_name(std::string const & path)
+{
+  return path.substr(path.find_last_of("\\/") + 1);
+}
+
+std::string dir_path(std::string const & path)
+{
+  return path.substr(0,path.find_last_of("\\/"));
+}
+
+#endif //GEN_CONSTANTS_HPP

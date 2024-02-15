@@ -42,9 +42,7 @@ class Source_Functor
 {
 private:
     Execution_Mode_t execution_mode;
-
-    uint seed;
-    uint64_t next_ts = 1704106800000000; // next timestamp in us starting from January 1, 2024 12:00:00 AM
+    uint64_t forged_ts = 1704106800000000; // next forged timestamp in us starting from January 1, 2024 12:00:00 AM
 
     size_t tuple_size = sizeof(tuple_t);
     const vector<tuple_t> &dataset;
@@ -77,7 +75,6 @@ public:
                    const int _rate,
                    const unsigned long _app_start_time,
                    const size_t _batch_size,
-                   const uint _seed,
                    Execution_Mode_t _e):
                    dataset(_dataset),
                    rate(_rate),
@@ -88,36 +85,28 @@ public:
                    app_start_time(_app_start_time),
                    current_time(_app_start_time),
                    batch_size(_batch_size),
-                   seed(_seed),
                    execution_mode(_e),
                    data_size(_dataset.size()) {}
 
     // operator() method
     void operator()(Source_Shipper<tuple_t> &shipper)
     {
-        std::uniform_int_distribution<int> distribution(300, 750);
-        std::mt19937 generator;
-        generator.seed(seed);
-
         current_time = current_time_nsecs(); // get the current time
-        while ( /* idx < data_size */ current_time - app_start_time <= app_run_time) // generation loop
+        while (current_time - app_start_time <= app_run_time) // generation loop
         {
-            /* if ((batch_size > 0) && (generated_tuples % batch_size == 0)) {
-                current_time = current_time_nsecs(); // get the new current time
-            }
-            if (batch_size == 0) {
-                current_time = current_time_nsecs(); // get the new current time
-            } */
-
             tuple_t t = dataset.at(idx);
+            forged_ts += t.ts != 0 ? (t.ts*1000) : (500*1000); // add next ts offset express in us
+            t.ts = current_time_nsecs();
+            shipper.pushWithTimestamp(std::move(t), forged_ts); // send the next tuple
+            if (execution_mode == Execution_Mode_t::DEFAULT) {
+                shipper.setNextWatermark(forged_ts);
+            }
+#if 0
+            if (generated_tuples < 15)
+                cout << "Source  * key-> " << t.key << ", ts-> " << forged_ts << endl;
+#endif
             generated_bytes += tuple_size;
             generated_tuples++;
-
-            t.ts = current_time_nsecs();
-            shipper.pushWithTimestamp(std::move(t), next_ts); // send the next tuple
-            if (execution_mode == Execution_Mode_t::DEFAULT) {
-                shipper.setNextWatermark(next_ts);
-            }
 
             idx++;
             if (idx >= data_size) { // check the dataset boundaries
@@ -129,9 +118,6 @@ public:
                 long delay_nsec = (long) ((1.0 / rate) * 1e9);
                 active_delay(delay_nsec);
             }
-
-            auto offset = (distribution(generator)+1);
-            next_ts += offset*1000;
 
             current_time = current_time_nsecs();
         }

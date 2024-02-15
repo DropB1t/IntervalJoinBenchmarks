@@ -41,11 +41,11 @@ struct tuple_t
         ts(0) {}
 
     // Constructor I
-    tuple_t(size_t _key):
+    tuple_t(size_t _key, uint64_t _ts):
             key(_key),
             value(5),
-            ts(0) {}
-
+            ts(_ts) {}
+    
     // Constructor II
     tuple_t(size_t _key, int64_t _value):
             key(_key),
@@ -60,7 +60,7 @@ struct std::hash<tuple_t>
 {
     size_t operator()(const tuple_t &t) const
     {
-        return std::hash<int>()(t.value) + std::hash<int>()(t.key);
+        return std::hash<int>()(t.ts) ^ std::hash<int>()(t.key);
     }
 };
 #endif

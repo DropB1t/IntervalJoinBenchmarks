@@ -63,7 +63,7 @@ public:
         tuple_t out(a.key, (a.value + b.value));
         out.ts = max(a.ts, b.ts);
 #if 0
-        if (processed < 16) {
+        if (processed < 15) {
             cout << "  * join tuple: system time-> " << out.ts << ", forged timestamp-> " << rc.getCurrentTimestamp() << endl;
         }
 #endif

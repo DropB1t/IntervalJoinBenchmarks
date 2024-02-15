@@ -21,49 +21,35 @@
  **************************************************************************************
  */
 
-#ifndef IJ_CONSTANTS_HPP
-#define IJ_CONSTANTS_HPP
+#ifndef GEN_CONSTANTS_HPP
+#define GEN_CONSTANTS_HPP
 
 #include<string>
 
 using namespace std;
 
-/// application run time (source generates the stream for app_run_time seconds, then sends out EOS)
-unsigned long app_run_time = 60 * 1000000000L; // 60 seconds
+typedef enum
+{
+    UNIFORM_SYNTHETIC,
+    ZIPF_SYNTHETIC
+} gen_types;
+
+const size_t default_data_size = 200000;
+
+const char separator = '|';
 
 const uint rseed = 12345;
 const uint lseed = 54321;
-const uint distribution_seed = 441287210;
 
 const double zipf_exponent = 0.8;
 
-/// components and topology name
-const string topology_name = "IntervalJoinBenchmark";
-const string r_source_name = "rsource";
-const string l_source_name = "lsource";
-const string join_name = "join";
-const string sink_name = "sink";
+static const char *gentype_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)"};
 
-static const char *types_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)", "Rovio Dataset", "Stock Dataset"};
-static const char *modes_str[] = {"Key based Parallelism", "Data based Parallelism"};
-
-// path of the dataset to be used
-
-// Rovio
-const string rovio_path = "../datasets/rovio/1000ms_1t.txt";
-
-// Stock
-const string r_stock_path ="../datasets/stock/cj_1000ms_1t.txt";
-const string l_stock_path ="../datasets/stock/sb_1000ms_1t.txt";
-
-// Synthetic Uniform
+// path of the datasets to be generated
 const string r_synthetic_uniform_path ="../datasets/synt_u/r_synthetic_uniform_timestamped.txt";
 const string l_synthetic_uniform_path ="../datasets/synt_u/l_synthetic_uniform_timestamped.txt";
 
-// Synthetic ZipF
 const string r_synthetic_zipf_path ="../datasets/synt_z/r_synthetic_zipf_timestamped.txt";
 const string l_synthetic_zipf_path ="../datasets/synt_z/l_synthetic_zipf_timestamped.txt";
 
-const char split_char = '|';
-
-#endif //IJ_CONSTANTS_HPP
+#endif //GEN_CONSTANTS_HPP
