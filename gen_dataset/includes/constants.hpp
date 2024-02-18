@@ -41,7 +41,7 @@ const char separator = '|';
 const uint rseed = 12345;
 const uint lseed = 54321;
 
-const double zipf_exponent = 0.8;
+double zipf_exponent = 0.8;
 
 static const char *gentype_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)"};
 

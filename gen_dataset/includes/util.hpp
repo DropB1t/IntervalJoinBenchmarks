@@ -42,11 +42,18 @@ const struct option long_opts[] = {
         {"help", NONE, 0, 'h'},
         {"num_key", REQUIRED, 0, 'k'},
         {"size", REQUIRED, 0, 's'},
+        {"zipf", REQUIRED, 0, 'z'},
         {"type", REQUIRED, 0, 't'},         // type of test to run
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --num_key <value> [--size <dataset_size>] --type < su | sz >";
+const string command_help = "Parameters: --num_key <value> [--size <dataset_size>] --type < su | sz > [--zipf <zipf_exponent>]"
+                            "\n\nOptions:"
+                            "\n\t--num_key <value> : number of keys"
+                            "\n\t--size <dataset_size> : size of the dataset (default: 200000)"
+                            "\n\t--type < su | sz > : type of test to run"
+                            "\n\t--zipf <zipf_exponent> : zipf exponent (default: 0.8)"
+                            "\n\t--help : print this help message";
 
 const string dataset_types = "Types:"
                              "\n\tsu = synthetic dataset with uniform distribution"

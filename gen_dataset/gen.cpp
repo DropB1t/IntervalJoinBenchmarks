@@ -84,6 +84,10 @@ int main(int argc, char *argv[])
                     data_size = atoi(optarg);
                     break;
                 }
+                case 'z': {
+                    zipf_exponent = atof(optarg);
+                    break;
+                }
                 case 't': {
                     string str_type(optarg);
                     if (str_type == "su") {
@@ -109,7 +113,7 @@ int main(int argc, char *argv[])
         }
     } else if (argc == 2 && ((option = getopt_long(argc, argv, "h", long_opts, &index)) != -1) && option == 'h') {
         cout << command_help << endl;
-        cout << dataset_types << endl;
+        cout << dataset_types << endl << endl;
         exit(EXIT_SUCCESS);
     } else {
         cout << parse_error << endl;
@@ -126,6 +130,7 @@ int main(int argc, char *argv[])
     cout << "  * data_size: " << data_size << endl;
     cout << "  * number of keys: " << num_keys << endl;
     cout << "  * type: " << gentype_str[type] << endl;
+    if (type == ZIPF_SYNTHETIC) cout << "  * zipf exponent: " << zipf_exponent << endl;
     cout << "  * generated files: " << base_name(rpath) << ", " << base_name(lpath) << endl;
 
     generate_dataset(rpath, num_keys, data_size, rseed);
