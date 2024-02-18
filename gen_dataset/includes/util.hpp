@@ -21,8 +21,8 @@
  **************************************************************************************
 */
 
-#ifndef GEN_CONSTANTS_HPP
-#define GEN_CONSTANTS_HPP
+#ifndef GEN_UTIL_HPP
+#define GEN_UTIL_HPP
 
 #include <iomanip>
 #include <iostream>
@@ -66,4 +66,4 @@ std::string dir_path(std::string const & path)
   return path.substr(0,path.find_last_of("\\/"));
 }
 
-#endif //GEN_CONSTANTS_HPP
+#endif //GEN_UTIL_HPP
