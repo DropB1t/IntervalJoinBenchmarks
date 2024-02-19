@@ -71,7 +71,7 @@ public class IntervalJoinBench {
     private static int numKeys = 0;
 
     public static void main(String[] args) throws Exception {
-        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource1,nSource2,nInterval-Join,nSink> --type < su | sz | rd | sd > [--chaining]\n" + 
+        String alert = "Parameters: --rate <value> --sampling <value> --parallelism <nSource1,nSource2,nInterval-Join,nSink> --type < su | sz | rd | sd > -l <lower bound in ms> -u <upper bound in ms> [--chaining]\n" + 
                        "Types:\n\tsu = synthetic dataset with uniform distribution" + 
                        "\n\tsz = synthetic dataset with zipf distribution" + 
                        "\n\trd = rovio dataset" + 
@@ -96,15 +96,7 @@ public class IntervalJoinBench {
         }
         
         int runtime = conf.getInteger(ConfigOptions.key(Conf.RUNTIME).intType().defaultValue(60)); // runtime in seconds - default 1 min
-        //int dataSize = conf.getInteger(ConfigOptions.key(Conf.DATA_SIZE).intType().defaultValue(2000000));
-        
-        int lower_bound = conf.getInteger(ConfigOptions.key(Conf.LOWER_BOUND).intType().defaultValue(-500));
-        int upper_bound = conf.getInteger(ConfigOptions.key(Conf.UPPER_BOUND).intType().defaultValue(500));
-        //int num_keys = conf.getInteger(ConfigOptions.key(Conf.NUM_KEYS).intType().defaultValue(10));
-
-        //int rSeed = conf.getInteger(ConfigOptions.key(Conf.RSEED).intType().defaultValue(12345));
-        //int lSeed = conf.getInteger(ConfigOptions.key(Conf.LSEED).intType().defaultValue(54321));
-        
+                
         ParameterTool argsTool = ParameterTool.fromArgs(args);
 
         if (!argsTool.has("rate") || !argsTool.has("sampling") || !argsTool.has("type") || !argsTool.has("parallelism")) {
@@ -116,6 +108,9 @@ public class IntervalJoinBench {
         int rate = argsTool.getInt("rate", 0);
         int samplingRate = argsTool.getInt("sampling", 100);
         boolean chaining = argsTool.has("chaining");
+
+        int lower_bound = argsTool.getInt("l", -500);
+        int upper_bound = argsTool.getInt("u", 500);
 
         String typeStr = argsTool.get("type", "su");
         switch (typeStr) {
@@ -134,7 +129,6 @@ public class IntervalJoinBench {
                 break;
         }
 
-
         int[] parallelism_degs = ToIntArray(argsTool.get("parallelism").split(","));
         if (parallelism_degs.length != 4) {
             LOG.error("Please provide 4 parallelism degrees");
@@ -146,12 +140,9 @@ public class IntervalJoinBench {
         int join_deg = parallelism_degs[2];
         int sink_deg = parallelism_degs[3];
 
-        //int distribution_seed = conf.getInteger(ConfigOptions.key(Conf.SEED).intType().defaultValue(441287210));
-        //double exponent = conf.getDouble(ConfigOptions.key(Conf.ZIPF_EXPONENT).doubleType().defaultValue(1.1));
-
         String rpath, lpath;
-        ArrayList<Event> rdataset, ldataset;
-        RichParallelSourceFunction<Event> orangeSource, greenSource;
+        ArrayList<SourceEvent> rdataset, ldataset;
+        RichParallelSourceFunction<SourceEvent> orangeSource, greenSource;
 
         switch (type) {
             case ZIPF_SYNTHETIC:
@@ -185,26 +176,21 @@ public class IntervalJoinBench {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf_flink);
         env.getConfig().disableGenericTypes();
        
-        DataStream<Event> orangeStream = env.addSource(orangeSource)
+        DataStream<SourceEvent> orangeStream = env.addSource(orangeSource)
                                                     .setParallelism(source1_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<Event> greenStream = env.addSource(greenSource)
+        DataStream<SourceEvent> greenStream = env.addSource(greenSource)
                                                     .setParallelism(source2_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<Event> joinedStream = orangeStream
+        DataStream<SourceEvent> joinedStream = orangeStream
                                                 .keyBy(new DataKeySelector())
                                                 .intervalJoin(greenStream.keyBy(new DataKeySelector()))
                                                 .between(Time.milliseconds(lower_bound), Time.milliseconds(upper_bound))
                                                 .process( new IntervalJoin() ).setParallelism(join_deg);
 
         joinedStream.addSink(new ConsoleSink(samplingRate)).setParallelism(sink_deg);
-
-        /* Filter Test
-        DataStream<Source_Event> filtered = orangeStream.filter(new FilterTest()).setParallelism(1);
-        filtered.addSink(new ConsoleSink(100)).setParallelism(1);
-        */
 
         String print_type = "";
         switch (type) {
@@ -280,8 +266,8 @@ public class IntervalJoinBench {
         return Stream.of(stringArray).mapToInt(Integer::parseInt).toArray();
     }
 
-    private static ArrayList<Event> parseDataset(String _file_path, String splitter) {
-        ArrayList<Event> ds = new ArrayList<>();
+    private static ArrayList<SourceEvent> parseDataset(String _file_path, String splitter) {
+        ArrayList<SourceEvent> ds = new ArrayList<>();
         try {
             Scanner scan = new Scanner(new File(_file_path));
             if (type == testType.UNIFORM_SYNTHETIC || type == testType.ZIPF_SYNTHETIC) {
@@ -299,7 +285,7 @@ public class IntervalJoinBench {
             while (scan.hasNextLine()) {
                 String line = scan.nextLine();
                 if (line.isBlank()) { continue; }
-                Event tuple = new Event();
+                SourceEvent tuple = new SourceEvent();
 
                 String[] fields = line.split(splitter); // regex quantifier (matches one or many split char)
                 switch (type) {
@@ -345,14 +331,14 @@ public class IntervalJoinBench {
         return ds;
     }
 
-    private static class DataKeySelector implements KeySelector<Event, Integer> {
+    private static class DataKeySelector implements KeySelector<SourceEvent, Integer> {
         @Override
-        public Integer getKey(Event value) {
+        public Integer getKey(SourceEvent value) {
             return value.f0;
         }
     }
 
-    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<Event> {
+    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<SourceEvent> {
 
         private IngestionTimeWatermarkStrategy() {}
 
@@ -361,13 +347,13 @@ public class IntervalJoinBench {
         }
 
         @Override
-        public WatermarkGenerator<Event> createWatermarkGenerator(
+        public WatermarkGenerator<SourceEvent> createWatermarkGenerator(
                 WatermarkGeneratorSupplier.Context context) {
             return new AscendingTimestampsWatermarks<>();
         }
 
         @Override
-        public TimestampAssigner<Event> createTimestampAssigner(
+        public TimestampAssigner<SourceEvent> createTimestampAssigner(
                 TimestampAssignerSupplier.Context context) {
             return (event, timestamp) -> timestamp;
         }

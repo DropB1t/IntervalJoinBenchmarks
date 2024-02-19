@@ -23,18 +23,18 @@
 
 package join;
 
-public class Source_Event {
+public class Tuple {
 	public int key;
 	public int value;
 	public long ts;
 
-	public Source_Event() {
+	public Tuple() {
 		key = -1;
 		value = 0;
 		ts = 0L;
 	}
 
-	public Source_Event(int _key, int _val, long _ts) {
+	public Tuple(int _key, int _val, long _ts) {
 		key = _key;
 		value = _val;
 		ts = _ts;

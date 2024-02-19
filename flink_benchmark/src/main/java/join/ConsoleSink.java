@@ -36,7 +36,7 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
  *  
  *  Sink node that receives and prints the results.
  */ 
-public class ConsoleSink extends RichSinkFunction<Event> {
+public class ConsoleSink extends RichSinkFunction<SourceEvent> {
 
     private static final Logger LOG = Log.get(ConsoleSink.class);
     private long processed;
@@ -58,7 +58,7 @@ public class ConsoleSink extends RichSinkFunction<Event> {
     }
 
     @Override
-    public void invoke(Event input, Context context) throws Exception {
+    public void invoke(SourceEvent input, Context context) throws Exception {
         //int key = input.f0;
         //int value = input.f1;
         long timestamp = input.f2;
