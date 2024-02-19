@@ -12,9 +12,11 @@ mvn package
 --sampling <value>
 --parallelism <nRSource,nLSource,nJoin,nSink>
 --type < su | sz | rd | sd >
+-l <lower bound in ms>
+-u <upper bound in ms>
 [--chaining]
 ```
-Other parameters ( as number of generated keys of synthetic datasets, lower and upper interval's bounds, seeds of generators... ) can be configured through `ij.properties` file located in `/resources`
+Other parameters ( as runtime and various datasets pathfile ) can be configured through `ij.properties` file located in `/resources`
 
 ### Test Types
 
@@ -25,6 +27,6 @@ Other parameters ( as number of generated keys of synthetic datasets, lower and 
 
 
 ## Example
-``java -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling 100 --parallelism 1 1 1 1 --type su [--chaining] ``
+``java -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling 100 --parallelism 1 1 1 1 --type su -l -500 -u 500 [--chaining] ``
 
-In the example above, we start the program with parallelism 1 for each operator (Right Source, Left Source, Join, Sink). Latency values are gathered every 100 received tuples in the Sink (sampling parameter) while the generation is performed at full speed (value 0 for the --rate parameter). Test will be performed with a synthetic dataset with uniform distribution (--type `su`).
+In the example above, we start the program with parallelism 1 for each operator (Right Source, Left Source, Join, Sink). The interval range is computed as [timestamp-500, timestamp+500] in ms precision. Latency values are gathered every 100 received tuples in the Sink (sampling parameter) while the generation is performed at full speed (value 0 for the --rate parameter). Test will be performed with a synthetic dataset with uniform distribution (--type `su`).
