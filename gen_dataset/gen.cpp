@@ -30,6 +30,7 @@ gen_types type;
 
 void generate_dataset(const string &path, int num_keys, int size, uint seed)
 {
+    // For random seed we can use: static_cast<long unsigned int>(std::time(0))
     mt19937 engine(seed);
     auto uniform_key_gen = uniform_int_distribution<int>(1, num_keys);
     auto zipf_key_gen = zipfian_int_distribution<int>(1, num_keys, zipf_exponent);
@@ -121,9 +122,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (data_size == 0) {
-        data_size = default_data_size;
-    }
+    if (data_size == 0) data_size = default_data_size;
     
     // display test configuration
     cout << gen_descr << endl;

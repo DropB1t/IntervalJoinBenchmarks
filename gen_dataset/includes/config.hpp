@@ -43,8 +43,6 @@ const uint lseed = 54321;
 
 double zipf_exponent = 0.8;
 
-static const char *gentype_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)"};
-
 // path of the datasets to be generated
 const string r_synthetic_uniform_path ="../datasets/synt_u/r_synthetic_uniform_timestamped.txt";
 const string l_synthetic_uniform_path ="../datasets/synt_u/l_synthetic_uniform_timestamped.txt";

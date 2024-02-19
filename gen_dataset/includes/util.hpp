@@ -32,7 +32,7 @@
 #include <getopt.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "constants.hpp"
+#include "config.hpp"
 
 using namespace std;
 
@@ -41,6 +41,7 @@ typedef enum { NONE, REQUIRED } opt_arg;    // an option can require one argumen
 const struct option long_opts[] = {
         {"help", NONE, 0, 'h'},
         {"num_key", REQUIRED, 0, 'k'},
+        {"type", REQUIRED, 0, 't'},         // type of test to run
         {"size", REQUIRED, 0, 's'},
         {"zipf", REQUIRED, 0, 'z'},
         {"type", REQUIRED, 0, 't'},         // type of test to run
@@ -50,14 +51,16 @@ const struct option long_opts[] = {
 const string command_help = "Parameters: --num_key <value> [--size <dataset_size>] --type < su | sz > [--zipf <zipf_exponent>]"
                             "\n\nOptions:"
                             "\n\t--num_key <value> : number of keys"
-                            "\n\t--size <dataset_size> : size of the dataset (default: 200000)"
                             "\n\t--type < su | sz > : type of test to run"
+                            "\n\t--size <dataset_size> : size of the dataset (default: 200000)"
                             "\n\t--zipf <zipf_exponent> : zipf exponent (default: 0.8)"
                             "\n\t--help : print this help message";
 
 const string dataset_types = "Types:"
                              "\n\tsu = synthetic dataset with uniform distribution"
                              "\n\tsz = synthetic dataset with zipf distribution";
+
+static const char *gentype_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)"};
 
 const string parse_error = "Error in parsing the input arguments";
 
