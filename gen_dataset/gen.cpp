@@ -30,6 +30,7 @@ gen_types type;
 
 void generate_dataset(const string &path, int num_keys, int size, uint seed)
 {
+    // For random seed we can use: static_cast<long unsigned int>(std::time(0))
     mt19937 engine(seed);
     auto uniform_key_gen = uniform_int_distribution<int>(1, num_keys);
     auto zipf_key_gen = zipfian_int_distribution<int>(1, num_keys, zipf_exponent);
@@ -84,6 +85,10 @@ int main(int argc, char *argv[])
                     data_size = atoi(optarg);
                     break;
                 }
+                case 'z': {
+                    zipf_exponent = atof(optarg);
+                    break;
+                }
                 case 't': {
                     string str_type(optarg);
                     if (str_type == "su") {
@@ -109,7 +114,7 @@ int main(int argc, char *argv[])
         }
     } else if (argc == 2 && ((option = getopt_long(argc, argv, "h", long_opts, &index)) != -1) && option == 'h') {
         cout << command_help << endl;
-        cout << dataset_types << endl;
+        cout << dataset_types << endl << endl;
         exit(EXIT_SUCCESS);
     } else {
         cout << parse_error << endl;
@@ -117,15 +122,14 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (data_size == 0) {
-        data_size = default_data_size;
-    }
+    if (data_size == 0) data_size = default_data_size;
     
     // display test configuration
     cout << gen_descr << endl;
     cout << "  * data_size: " << data_size << endl;
     cout << "  * number of keys: " << num_keys << endl;
     cout << "  * type: " << gentype_str[type] << endl;
+    if (type == ZIPF_SYNTHETIC) cout << "  * zipf exponent: " << zipf_exponent << endl;
     cout << "  * generated files: " << base_name(rpath) << ", " << base_name(lpath) << endl;
 
     generate_dataset(rpath, num_keys, data_size, rseed);

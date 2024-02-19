@@ -41,9 +41,7 @@ const char separator = '|';
 const uint rseed = 12345;
 const uint lseed = 54321;
 
-const double zipf_exponent = 0.8;
-
-static const char *gentype_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)"};
+double zipf_exponent = 0.8;
 
 // path of the datasets to be generated
 const string r_synthetic_uniform_path ="../datasets/synt_u/r_synthetic_uniform_timestamped.txt";
