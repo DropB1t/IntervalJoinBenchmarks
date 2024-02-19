@@ -24,16 +24,16 @@
 package join.sources;
 
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.flink.configuration.Configuration;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import join.Event;
-import util.Sampler;
+import join.SourceEvent;
 import util.ThroughputCounter;
 
-public class DistributionSource extends RichParallelSourceFunction<Event> {
+public class DistributionSource extends RichParallelSourceFunction<SourceEvent> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DistributionSource.class);
     
@@ -42,50 +42,41 @@ public class DistributionSource extends RichParallelSourceFunction<Event> {
     private long t_start;
     private long t_end;
 
-    private int[] keys;
-    private int data_size;
+    private int num_keys;
     
     private final long runtime;
     private boolean running = true;
     
     private final int gen_rate;
-    private long nt_execution;
     private long generated;
-    private int index;
     
-    private Sampler throughput_sampler;
-
     private long ts = 1704106800000L; // January 1, 2024 12:00:00 AM in ms
     private final int offset_seed;
     private MersenneTwister offset;
+    private UniformIntegerDistribution keyDistribution;
 
-    public DistributionSource(long _runtime, int _gen_rate, int _offset_seed, int[] _keys) {
+    public DistributionSource(long _runtime, int _gen_rate, int _num_keys, int _offset_seed) {
         this.runtime = (long) (_runtime * 1e9); // ns
         this.offset_seed = _offset_seed;
         this.gen_rate = _gen_rate;
-
-        this.data_size = _keys.length;
-        this.keys = _keys;
-
-        index = 0;
+        this.num_keys = _num_keys;
         generated = 0;
-        nt_execution = 0;
     }
     
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        throughput_sampler = new Sampler();
         this.offset = new MersenneTwister(offset_seed);
+        this.keyDistribution = new UniformIntegerDistribution(offset, 1, num_keys);
     }
 
     @Override
-    public void run(final SourceContext<Event> ctx) throws Exception {
+    public void run(final SourceContext<SourceEvent> ctx) throws Exception {
         this.t_start = System.nanoTime();
         // generation loop
         while ((System.nanoTime() - this.t_start < runtime) && running) {
-            Event tuple = new Event();
-            tuple.f0 = keys[index];
+            SourceEvent tuple = new SourceEvent();
+            tuple.f0 = keyDistribution.sample();
             tuple.f1 = VALUE;
             tuple.f2 = System.nanoTime();
             ctx.collectWithTimestamp(tuple, ts);
@@ -94,16 +85,10 @@ public class DistributionSource extends RichParallelSourceFunction<Event> {
                 LOG.info("  * key-> " + tuple.f0 + ", ts-> " + ts);
             */
             generated++;
-            index++;
             
             if (gen_rate != 0) { // not full speed
                 long delay_nsec = (long) ((1.0d / gen_rate) * 1e9);
                 active_delay(delay_nsec);
-            }
-            
-            if (index >= data_size) { // check the dataset boundaries
-                index = 0;
-                nt_execution++;
             }
 
             ts += offset.nextInt(500);
@@ -144,12 +129,8 @@ public class DistributionSource extends RichParallelSourceFunction<Event> {
             double rate = Math.floor( generated / ((double)(this.t_end - this.t_start) / 1e9) ); // per second
             LOG.info("[Source] execution time: " + t_elapsed +
                     " ms, generated: " + generated +
-                    ", generations: " + nt_execution +
                     ", bandwidth: " + rate +  // tuples per second
                     " tuples/s");
-
-            throughput_sampler.add(rate);
-            //MetricGroup.add("throughput", throughput);
         }
     }
 }

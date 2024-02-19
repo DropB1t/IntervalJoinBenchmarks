@@ -29,7 +29,7 @@ package constants;
  *  
  *  Constants peculiar of the IntervalJoinBenchmarks application.
  */ 
-public interface IntervalJoinConstants{
+public interface IntervalJoinConstants {
     String HELP = "--help";
     String DEFAULT_PROPERTIES = "/ij.properties";
     String DEFAULT_TOPO_NAME = "IntervalJoinBenchmark";
@@ -44,25 +44,5 @@ public interface IntervalJoinConstants{
         String LSTOCK_PATH = "ij.source.l_stock_path";
         String ROVIO_PATH = "ij.source.rovio_path";
         String RUNTIME = "ij.runtime_sec";
-        String LOWER_BOUND = "ij.lower_bound";
-        String UPPER_BOUND = "ij.upper_bound";
-        String DATA_SIZE = "ij.data_size";  // TODO to remove
-        String NUM_KEYS = "ij.num_keys";    // TODO to remove
-        String SEED = "ij.seed";
-        String RSEED = "ij.ts_rseed";
-        String LSEED = "ij.ts_lseed";
-        String ZIPF_EXPONENT = "ij.zipf_exponent";
-    }
-    
-    interface Component{
-        String SOURCE = "source";
-        String INTERVAL_JOIN = "interval_join";
-        String SINK  = "sink";
-    }
-
-    interface Field{
-        String KEY = "key";
-        String VALUE = "value";
-        String TIMESTAMP = "timestamp";
     }
 }

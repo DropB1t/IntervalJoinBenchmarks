@@ -54,6 +54,8 @@ private:
     long generated_bytes;
     long nt_execution;
 
+    size_t parallelism;
+    size_t replica_id;
     unsigned long app_start_time;
     unsigned long current_time;
     int rate;
@@ -89,8 +91,11 @@ public:
                    data_size(_dataset.size()) {}
 
     // operator() method
-    void operator()(Source_Shipper<tuple_t> &shipper)
+    void operator()(Source_Shipper<tuple_t> &shipper, RuntimeContext &rc)
     {
+        replica_id = rc.getReplicaIndex();
+        parallelism = rc.getParallelism();
+        
         current_time = current_time_nsecs(); // get the current time
         while (current_time - app_start_time <= app_run_time) // generation loop
         {
@@ -126,6 +131,17 @@ public:
         }
         sent_tuples.fetch_add(generated_tuples);
         total_bytes.fetch_add(generated_bytes);
+    }
+
+    ~Source_Functor() {
+        if (generated_tuples != 0) {
+            double delta_time = static_cast<double>(current_time - app_start_time);
+            cout << "[Source_Functor] replica " << replica_id + 1 << "/" << parallelism
+                 << ", execution time: " << delta_time / 1e09
+                 << "s, generated: " << generated_tuples << " tuples in " << nt_execution << " executions"
+                 << ", bandwidth: " << generated_tuples / (delta_time / 1e09)
+                 << " (tuples/s) " << endl;
+        }
     }
 };
 

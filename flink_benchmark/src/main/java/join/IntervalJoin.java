@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 
 import util.Log;
 
-public class IntervalJoin extends ProcessJoinFunction<Event, Event, Event> {
+public class IntervalJoin extends ProcessJoinFunction<SourceEvent, SourceEvent, SourceEvent> {
 
     private static final Logger LOG = Log.get(IntervalJoin.class);
     private long processed;
@@ -44,9 +44,9 @@ public class IntervalJoin extends ProcessJoinFunction<Event, Event, Event> {
     }
 
     @Override
-    public void processElement(Event first, Event second, Context ctx, Collector<Event> out) throws Exception {
+    public void processElement(SourceEvent first, SourceEvent second, Context ctx, Collector<SourceEvent> out) throws Exception {
         //LOG.info(first.f0 + " | " + second.f0);
-        Event out_t = new Event();
+        SourceEvent out_t = new SourceEvent();
         out_t.f0 = first.f0;
         out_t.f1 = Integer.valueOf(first.f1+second.f1);
         out_t.f2 = Long.valueOf(Math.max(first.f2, second.f2));

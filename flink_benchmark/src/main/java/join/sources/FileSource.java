@@ -28,20 +28,19 @@ import org.apache.flink.configuration.Configuration;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import join.Event;
-import util.Sampler;
+import join.SourceEvent;
 import util.ThroughputCounter;
 
 import java.util.ArrayList;
 
-public class FileSource extends RichParallelSourceFunction<Event> {
+public class FileSource extends RichParallelSourceFunction<SourceEvent> {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileSource.class);
 
     private long t_start;
     private long t_end;
 
-    private ArrayList<Event> dataset;
+    private ArrayList<SourceEvent> dataset;
     private int data_size;
     
     private final long runtime;
@@ -52,11 +51,9 @@ public class FileSource extends RichParallelSourceFunction<Event> {
     private long generated;
     private int index;
     
-    private Sampler throughput_sampler;
-
     private long ts = 1704106800000L; // January 1, 2024 12:00:00 AM in ms
 
-    public FileSource(long _runtime, int _gen_rate, ArrayList<Event> _dataset) {
+    public FileSource(long _runtime, int _gen_rate, ArrayList<SourceEvent> _dataset) {
         this.runtime = (long) (_runtime * 1e9); // ns
         this.gen_rate = _gen_rate;
 
@@ -71,19 +68,18 @@ public class FileSource extends RichParallelSourceFunction<Event> {
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        throughput_sampler = new Sampler();
     }
 
     @Override
-    public void run(final SourceContext<Event> ctx) throws Exception {
+    public void run(final SourceContext<SourceEvent> ctx) throws Exception {
         this.t_start = System.nanoTime();
 
         // generation loop
         while ((System.nanoTime() - this.t_start < runtime) && running) {
-            Event tuple = dataset.get(index);
+            SourceEvent tuple = dataset.get(index);
             ts += tuple.f2 != 0L ? tuple.f2 : 500L;
             
-            Event input = new Event();
+            SourceEvent input = new SourceEvent();
             input.f0 = tuple.f0;
             input.f1 = tuple.f1;
             input.f2 = System.nanoTime();
@@ -144,9 +140,6 @@ public class FileSource extends RichParallelSourceFunction<Event> {
                     ", generations: " + nt_execution +
                     ", bandwidth: " + rate +  // tuples per second
                     " tuples/s");
-
-            throughput_sampler.add(rate);
-            //MetricGroup.add("throughput", throughput);
         }
     }
 }

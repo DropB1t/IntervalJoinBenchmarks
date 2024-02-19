@@ -29,7 +29,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.RichFilterFunction;
 
 // class Filter
-public class FilterTest extends RichFilterFunction<Source_Event> {
+public class FilterTest extends RichFilterFunction<Tuple> {
     private static final Logger LOG = Log.get(FilterTest.class);
     private long t_start;
     private long t_end;
@@ -47,7 +47,7 @@ public class FilterTest extends RichFilterFunction<Source_Event> {
 
     // flatmap method
     @Override
-    public boolean filter(Source_Event input) {
+    public boolean filter(Tuple input) {
         int value = input.value;
         t_end = System.nanoTime();
         processed++;

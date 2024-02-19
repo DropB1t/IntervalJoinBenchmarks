@@ -31,12 +31,6 @@ using namespace std;
 /// application run time (source generates the stream for app_run_time seconds, then sends out EOS)
 unsigned long app_run_time = 60 * 1000000000L; // 60 seconds
 
-const uint rseed = 12345;
-const uint lseed = 54321;
-const uint distribution_seed = 441287210;
-
-const double zipf_exponent = 0.8;
-
 /// components and topology name
 const string topology_name = "IntervalJoinBenchmark";
 const string r_source_name = "rsource";
@@ -47,7 +41,7 @@ const string sink_name = "sink";
 static const char *types_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)", "Rovio Dataset", "Stock Dataset"};
 static const char *modes_str[] = {"Key based Parallelism", "Data based Parallelism"};
 
-// path of the dataset to be used
+// Datasets path to be used
 
 // Rovio
 const string rovio_path = "../datasets/rovio/1000ms_1t.txt";

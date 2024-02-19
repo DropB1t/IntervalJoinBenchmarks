@@ -49,7 +49,7 @@ const struct option long_opts[] = {
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > --mode < k | d > -l [lower bound in ms] -u [upper bound in ms] [--chaining]";
+const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > --mode < k | d > -l <lower bound in ms> -u <upper bound in ms> [--chaining]";
 
 // information about application
 const string rsource_str = "  * rsource parallelism degree: ";
