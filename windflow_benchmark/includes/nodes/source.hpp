@@ -117,9 +117,6 @@ public:
             if (idx >= data_size) { // check the dataset boundaries
                 idx = 0;
                 nt_execution++;
-                if (execution_mode == Execution_Mode_t::DEFAULT) {
-                    shipper.emitWatermark(forged_ts);
-                }
             }
 
             if (rate != 0) { // active waiting to respect the generation rate

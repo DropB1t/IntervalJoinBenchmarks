@@ -75,8 +75,8 @@ public:
             unsigned long tuple_latency = (current_time - (*t).ts) / 1e06;
             latency_sampler.add(tuple_latency, current_time);
 #if 0
-            if (joined < 15) {
-                cout << "Sink  * key-> " << (*t).key << ", ts-> " << rc.getCurrentTimestamp() << endl;
+            if (joined < 20000) {
+                cout << "" << (*t).key << "\t" << rc.getCurrentTimestamp() << endl;
             }
 #endif
             joined++;// tuples counter

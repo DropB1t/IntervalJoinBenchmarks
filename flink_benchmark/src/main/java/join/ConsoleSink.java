@@ -62,13 +62,14 @@ public class ConsoleSink extends RichSinkFunction<SourceEvent> {
         //int key = input.f0;
         //int value = input.f1;
         long timestamp = input.f2;
-        /*         
-        if (processed < 15)
-            LOG.info("  * key-> " + key + ", ts-> " + context.timestamp());
-        */
+
         // evaluate latency
         long now = System.nanoTime();
         latency.add((double)((now - timestamp)/ 1e6), System.nanoTime()); // ms precision
+        /* 
+        if (processed < 20000)  
+            System.out.println("" + key + "\t" + (context.timestamp()*1000));
+        */
         processed++;
         t_end = System.nanoTime();
     }
