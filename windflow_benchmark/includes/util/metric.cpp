@@ -21,12 +21,20 @@
  **************************************************************************************
  */
 
+#include "constants.hpp"
 #include "metric.hpp"
+
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/writer.h>
+
 #include <algorithm>
 #include <fstream>
 #include <numeric>
-#include <rapidjson/prettywriter.h>
 #include <sstream>
+
+extern string outdir;
 
 using namespace rapidjson;
 
@@ -43,24 +51,79 @@ void Metric::add(double value)
 
 void Metric::total(long total)
 {
-    total_ = total;
+    total_ += total;
 }
 
 void Metric::dump()
 {
+    Document doc = get_json_object();
+
+    // format the file name
+    std::ostringstream file_name;
+    file_name << "metric_" << name_ << ".json";
+
+    // serialize the object to file
+    std::ofstream fs(file_name.str());
+    fs << doc.GetString();
+}
+
+void Metric::test_dump()
+{
+    // format the file name
+    string file_name;
+    file_name = outdir + name_ + ".json";
+
+    // Read the JSON array from the file
+    Document document;
+    Document::AllocatorType& allocator = document.GetAllocator();
+    std::ifstream ifs(file_name);
+
+    if (!ifs) {
+        // File doesn't exist, create a new one with an array
+        document.SetArray();
+    } else {
+        // File exists, read the existing data
+        IStreamWrapper isw(ifs);
+        document.ParseStream(isw);
+        if (!document.IsArray()) {
+            throw std::runtime_error("Existing file does not contain a JSON array");
+        }
+    }
+    ifs.close();
+
+    // Create a Document for the new object
+    Document newObjDoc = get_json_object();
+
+    // Append the new object to the array
+    document.PushBack(Value(newObjDoc, allocator), allocator);
+
+    StringBuffer strbuf;
+    Writer<StringBuffer> arr_writer(strbuf);
+    document.Accept(arr_writer);
+
+    std::ofstream ofs(file_name);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("Could not open file for writing");
+    }
+    ofs << strbuf.GetString();
+    ofs.close();
+}
+
+rapidjson::Document Metric::get_json_object()
+{
     StringBuffer buffer;
-    PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+    PrettyWriter<StringBuffer> writer(buffer);
 
     writer.StartObject();
 
-    writer.Key("name");
-    writer.String(name_.c_str());
-
-    writer.Key("samples");
-    writer.Uint(samples_.size());
+    //writer.Key("name");
+    //writer.String(name_.c_str());
 
     writer.Key("total");
     writer.Uint(total_);
+
+    writer.Key("samples");
+    writer.Uint(samples_.size());
 
     writer.Key("mean");
     writer.Double(std::accumulate(samples_.begin(), samples_.end(), 0.0) / samples_.size());
@@ -89,13 +152,9 @@ void Metric::dump()
 
     writer.EndObject();
 
-    // format the file name
-    std::ostringstream file_name;
-    file_name << "metric_" << name_ << ".json";
-
-    // serialize the object to file
-    std::ofstream fs(file_name.str());
-    fs << buffer.GetString();
+    Document doc;
+    doc.Parse(buffer.GetString());
+    return doc;
 }
 
 }

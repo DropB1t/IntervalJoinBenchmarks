@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <rapidjson/document.h>
 
 namespace util {
 
@@ -40,11 +41,15 @@ public:
 
     void dump();
 
+    void test_dump();
+
+    rapidjson::Document get_json_object();
+
 private:
 
     std::string name_;
     std::vector<double> samples_;
-    long total_;
+    long total_=0L;
 };
 
 }

@@ -42,11 +42,21 @@ void MetricGroup::add(std::string name, Sampler sampler)
     samplers.push_back(sampler);
 }
 
+/**
+ * Dumps all metrics in the MetricGroup.
+ * If COLLECT_TEST_DATA is defined, the metrics are appended to the file located at the out directory.
+ * Otherwise, the metrics are dumped normally.
+ */
 void MetricGroup::dump_all()
 {
     for (auto &it : map_) {
         Metric metric = get_metric(it.first);
+#ifdef COLLECT_TEST_DATA
+        metric.test_dump();
+#else
         metric.dump();
+#endif
+
     }
 }
 

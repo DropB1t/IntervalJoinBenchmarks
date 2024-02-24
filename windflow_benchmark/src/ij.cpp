@@ -29,6 +29,12 @@
 #include <windflow.hpp>
 #include <ff/ff.hpp>
 
+#include <fstream>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/istreamwrapper.h>
+
 #include "../includes/nodes/source.hpp"
 #include "../includes/nodes/join.hpp"
 #include "../includes/nodes/sink.hpp"
@@ -59,93 +65,17 @@ typedef enum
 atomic<long> sent_tuples; // total number of tuples sent by all the sources
 atomic<long> total_bytes; // total number of bytes processed by the system
 
+string outdir;
+
 test_types type;
 size_t num_keys = 0;
 size_t data_size = 0;
 
-vector<string> split(const string &target, const char delim)
-{
-    string temp;
-    stringstream stringstream{target};
-    vector<string> result;
+vector<string> split(const string &, const char );
 
-    while (getline(stringstream, temp, delim))
-    {
-        result.push_back(temp);
-    }
+vector<tuple_t> parse_dataset(const string &, const char );
 
-    return result;
-}
-
-vector<tuple_t> parse_dataset(const string &file_path, const char delim)
-{
-    vector<tuple_t> dataset;
-    ifstream file(file_path);
-
-    if (file.is_open())
-    {
-        string line;
-        vector<string> tokens;
-
-        // First line - Syntethic Parameters
-        if (type == test_types::UNIFORM_SYNTHETIC ||type == test_types::ZIPF_SYNTHETIC)
-        {
-            getline(file, line);
-            tokens = split(line, delim);
-            if (tokens.size() != 2) {
-                cout << "Error in parsing Syntethic parameters" << endl;
-                exit(EXIT_FAILURE);
-            }
-            num_keys = stoul(tokens[0]);
-            data_size = stoul(tokens[1]);
-        }
-
-        // Parsing tuples
-        size_t key;
-        int64_t value;
-        uint64_t ts;
-        while (getline(file, line))
-        {
-            if (!line.empty()) {
-                tokens = split(line, delim);
-                
-                switch (type)
-                {
-                    case UNIFORM_SYNTHETIC:
-                    case ZIPF_SYNTHETIC:
-                        if (tokens.size() != 2) {
-                            cout << "Error in parsing Syntethic tuple" << endl;
-                            exit(EXIT_FAILURE);
-                        }
-                        key = stoul(tokens[0]);
-                        ts = stoul(tokens[1]);
-                        dataset.push_back(tuple_t(key, ts));
-                        break;
-                    case ROVIO_TEST:
-                        if (tokens.size() != 4) {
-                            cout << "Error in parsing tuple" << endl;
-                            exit(EXIT_FAILURE);
-                        }
-                        key = stoul(tokens[0]);
-                        value = stol(tokens[2]);
-                        dataset.push_back(tuple_t(key, value));
-                        break;
-                    case STOCK_TEST:
-                        if (tokens.size() != 2) {
-                            cout << "Error in parsing tuple" << endl;
-                            exit(EXIT_FAILURE);
-                        }
-                        key = stoul(tokens[0]);
-                        value = stol(tokens[1]);
-                        dataset.push_back(tuple_t(key, value));
-                        break;
-                }
-            }
-        }
-        file.close();
-    }
-    return dataset;
-}
+void dumpThroughput(int, const std::string& );
 
 int main(int argc, char *argv[])
 {
@@ -173,8 +103,8 @@ int main(int argc, char *argv[])
     long sampling = 0;
     int rate = 0;
 
-    if (argc == 17 || argc == 18) {
-        while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:l:u:c:", long_opts, &index)) != -1) {
+    if (argc == 19 || argc == 20) {
+        while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:l:u:c:o:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'r': {
                     rate = atoi(optarg);
@@ -253,6 +183,10 @@ int main(int argc, char *argv[])
                 }
                 case 'c': {
                     chaining = true;
+                    break;
+                }
+                case 'o': {
+                    outdir = string(optarg);
                     break;
                 }
                 default: {
@@ -370,19 +304,142 @@ int main(int argc, char *argv[])
         join_pipe.add_sink(sink);
     }
     
+    //cout << "Executing topology" << endl;
     cout << fixed << setprecision(2);
-    cout << "Executing topology" << endl;
+
     /// evaluate topology execution time
     volatile unsigned long start_time_main_usecs = current_time_usecs();
     topology.run();
     volatile unsigned long end_time_main_usecs = current_time_usecs();
+    
     double elapsed_time_seconds = static_cast<double>(end_time_main_usecs - start_time_main_usecs) / (1000000.0);
     double throughput = sent_tuples / elapsed_time_seconds;
+    
     double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
     cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
-    cout << "Dumping metrics" << endl;
-    util::metric_group.dump_all();
     
-
+    //cout << "Dumping metrics" << endl;
+    util::metric_group.dump_all();
+#ifdef COLLECT_TEST_DATA
+    dumpThroughput((int)throughput, (outdir +"throughput.json"));
+#endif
+    
     return 0;
+}
+
+vector<string> split(const string &target, const char delim)
+{
+    string temp;
+    stringstream stringstream{target};
+    vector<string> result;
+
+    while (getline(stringstream, temp, delim))
+    {
+        result.push_back(temp);
+    }
+
+    return result;
+}
+
+vector<tuple_t> parse_dataset(const string &file_path, const char delim)
+{
+    vector<tuple_t> dataset;
+    ifstream file(file_path);
+
+    if (file.is_open())
+    {
+        string line;
+        vector<string> tokens;
+
+        // First line - Syntethic Parameters
+        if (type == test_types::UNIFORM_SYNTHETIC ||type == test_types::ZIPF_SYNTHETIC)
+        {
+            getline(file, line);
+            tokens = split(line, delim);
+            if (tokens.size() != 2) {
+                cout << "Error in parsing Syntethic parameters" << endl;
+                exit(EXIT_FAILURE);
+            }
+            num_keys = stoul(tokens[0]);
+            data_size = stoul(tokens[1]);
+        }
+
+        // Parsing tuples
+        size_t key;
+        int64_t value;
+        uint64_t ts;
+        while (getline(file, line))
+        {
+            if (!line.empty()) {
+                tokens = split(line, delim);
+                
+                switch (type)
+                {
+                    case UNIFORM_SYNTHETIC:
+                    case ZIPF_SYNTHETIC:
+                        if (tokens.size() != 2) {
+                            cout << "Error in parsing Syntethic tuple" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        key = stoul(tokens[0]);
+                        ts = stoul(tokens[1]);
+                        dataset.push_back(tuple_t(key, ts));
+                        break;
+                    case ROVIO_TEST:
+                        if (tokens.size() != 4) {
+                            cout << "Error in parsing tuple" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        key = stoul(tokens[0]);
+                        value = stol(tokens[2]);
+                        dataset.push_back(tuple_t(key, value));
+                        break;
+                    case STOCK_TEST:
+                        if (tokens.size() != 2) {
+                            cout << "Error in parsing tuple" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        key = stoul(tokens[0]);
+                        value = stol(tokens[1]);
+                        dataset.push_back(tuple_t(key, value));
+                        break;
+                }
+            }
+        }
+        file.close();
+    }
+    return dataset;
+}
+
+void dumpThroughput(int newThroughput, const std::string& filename) {
+    rapidjson::Document document;
+    rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+
+    std::ifstream ifs(filename);
+    if (!ifs) {
+        // File doesn't exist, create a new one with an array
+        document.SetArray();
+    } else {
+        // File exists, read the existing data
+        rapidjson::IStreamWrapper isw(ifs);
+        document.ParseStream(isw);
+        if (!document.IsArray()) {
+            throw std::runtime_error("Existing file does not contain a JSON array");
+        }
+    }
+    ifs.close();
+    
+    // Append new data and write it back to the file
+    document.PushBack(rapidjson::Document().SetDouble(newThroughput), allocator);
+
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+    document.Accept(writer);
+
+    std::ofstream ofs(filename);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("Could not open file for writing");
+    }
+    ofs << strbuf.GetString();
+    ofs.close();
 }

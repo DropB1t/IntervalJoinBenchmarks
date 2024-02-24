@@ -46,10 +46,11 @@ const struct option long_opts[] = {
         {"lower", REQUIRED, 0, 'l'},        // lower bound of interval
         {"upper", REQUIRED, 0, 'u'},        // upper bound of interval
         {"chaining", NONE, 0, 'c'},
+        {"outdir", REQUIRED, 0, 'o'},
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > --mode < k | d > -l <lower bound in ms> -u <upper bound in ms> [--chaining]";
+const string command_help = "Parameters: --rate <value> --key <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | rd | sd > --mode < k | d > -l <lower bound in ms> -u <upper bound in ms> [--chaining] -outdir <path>";
 
 // information about application
 const string rsource_str = "  * rsource parallelism degree: ";
