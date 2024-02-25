@@ -73,10 +73,10 @@ zipfian_skews=(0.0 0.6 0.9)
 main() {
     echo "${num_runs} runs will be executed for each benchmark."
     echo "Running benchmarks..."
-    fl_run_synthetic_benchmarks
-    fl_run_real_benchmarks
     wf_run_synthetic_benchmarks
     wf_run_real_benchmarks
+    fl_run_synthetic_benchmarks
+    fl_run_real_benchmarks
     echo "Done"
 }
 
