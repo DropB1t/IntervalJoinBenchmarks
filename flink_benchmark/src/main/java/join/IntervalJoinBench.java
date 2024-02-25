@@ -43,6 +43,9 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.TaskManagerOptions;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
@@ -55,6 +58,7 @@ import constants.IntervalJoinConstants.Conf;
 import util.Log;
 import util.MetricGroup;
 import util.ThroughputCounter;
+import util.Util;
 
 public class IntervalJoinBench {
     private static final Logger LOG = Log.get(IntervalJoinBench.class);
@@ -214,7 +218,7 @@ public class IntervalJoinBench {
         "  * num_keys: " + numKeys + "\n";
 
         // print app info
-        LOG.info("Submiting " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " with parameters:\n\n" +
+        LOG.info("Submiting " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " with parameters:\n" +
         "  * rate: " + ((rate == 0) ? "full_speed" : rate) + " tuples/second\n" +
         "  * sampling: " + samplingRate + "\n" +
         (( type == testType.UNIFORM_SYNTHETIC || type == testType.ZIPF_SYNTHETIC ) ? synthetic_stats : "") +
@@ -233,33 +237,37 @@ public class IntervalJoinBench {
         "  * source1 +--+ \n" + 
         "  *            +--> join --> sink \n" + 
         "  * source2 +--+ \n" + 
-        "  * ==============================\n" );
+        "  * ==============================\n" +
+        ((chaining) ? "  * chaining enabled" : "  * chaining disabled" ) );
 
         try {
             if (!chaining) {
                 env.disableOperatorChaining();
-                LOG.info("Chaining is disabled");
-            }
-            else {
-                LOG.info("Chaining is enabled");
             }
 
             // run the topology
-            LOG.info("Executing " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " topology");
+            //LOG.info("Executing " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " topology");
             JobExecutionResult result = env.execute();
-            LOG.info("Exiting");
+            //LOG.info("Exiting");
 
             // measure throughput
             double throughput = (double) (ThroughputCounter.getValue() / result.getNetRuntime(TimeUnit.SECONDS));
             LOG.info("Measured throughput: " + throughput + " tuples/second");
+            dumpThroughput((int)throughput);
 
-            LOG.info("Dumping metrics");
+            //LOG.info("Dumping metrics");
             MetricGroup.dumpAll();
         }
         catch (Exception e) {
             LOG.error(e.toString());
         }
 
+    }
+
+    private static void dumpThroughput(int throughput) throws JsonProcessingException, IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode throughputNode = objectMapper.convertValue(throughput, JsonNode.class);
+        Util.appendJson(throughputNode, "throughput.json");
     }
 
     private static int[] ToIntArray(String[] stringArray) {

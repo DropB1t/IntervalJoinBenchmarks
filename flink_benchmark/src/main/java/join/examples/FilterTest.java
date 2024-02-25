@@ -21,10 +21,13 @@
  **************************************************************************************
  */
 
-package join;
+package join.examples;
 
 import util.Log;
 import org.slf4j.Logger;
+
+import join.Tuple;
+
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.RichFilterFunction;
 

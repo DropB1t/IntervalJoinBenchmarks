@@ -55,7 +55,7 @@ public class MetricGroup {
         Stack<Sampler> samplers = map.get(name);
         while (!samplers.empty()) {
             Sampler sampler = samplers.pop();
-            metric.setTotal(sampler.getTotal());
+            metric.addTotal(sampler.getTotal());
             // add all the values from the sampler
             for (double value : sampler.getValues()) {
                 metric.add(value);

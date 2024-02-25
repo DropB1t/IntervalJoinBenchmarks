@@ -21,7 +21,7 @@
  **************************************************************************************
  */
 
-package join;
+package join.examples;
 
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.distribution.ZipfDistribution;
