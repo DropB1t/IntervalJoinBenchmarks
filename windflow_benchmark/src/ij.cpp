@@ -94,8 +94,7 @@ int main(int argc, char *argv[])
     bool chaining = false;
     long sampling = 0;
     int rate = 0;
-
-    if (argc == 19 || argc == 20) {
+    if (argc >= 17 && argc <= 20) {
         while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:l:u:c:o:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'r': {
