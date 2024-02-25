@@ -23,10 +23,7 @@
 
 #include "metric_group.hpp"
 #include <algorithm>
-#include <fstream>
 #include <numeric>
-#include <rapidjson/prettywriter.h>
-#include <sstream>
 
 using namespace rapidjson;
 
@@ -42,11 +39,6 @@ void MetricGroup::add(std::string name, Sampler sampler)
     samplers.push_back(sampler);
 }
 
-/**
- * Dumps all metrics in the MetricGroup.
- * If COLLECT_TEST_DATA is defined, the metrics are appended to the file located at the out directory.
- * Otherwise, the metrics are dumped normally.
- */
 void MetricGroup::dump_all()
 {
     for (auto &it : map_) {
