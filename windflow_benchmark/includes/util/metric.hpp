@@ -41,9 +41,7 @@ public:
 
     void dump();
 
-    void test_dump();
-
-    rapidjson::Document get_json_object();
+    rapidjson::Document get_json();
 
 private:
 

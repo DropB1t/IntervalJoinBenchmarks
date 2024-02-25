@@ -51,12 +51,7 @@ void MetricGroup::dump_all()
 {
     for (auto &it : map_) {
         Metric metric = get_metric(it.first);
-#ifdef COLLECT_TEST_DATA
-        metric.test_dump();
-#else
         metric.dump();
-#endif
-
     }
 }
 

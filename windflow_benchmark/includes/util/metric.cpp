@@ -23,6 +23,7 @@
 
 #include "constants.hpp"
 #include "metric.hpp"
+#include "util.hpp"
 
 #include <rapidjson/istreamwrapper.h>
 #include <rapidjson/stringbuffer.h>
@@ -56,60 +57,16 @@ void Metric::total(long total)
 
 void Metric::dump()
 {
-    Document doc = get_json_object();
-
-    // format the file name
-    std::ostringstream file_name;
-    file_name << "metric_" << name_ << ".json";
-
-    // serialize the object to file
-    std::ofstream fs(file_name.str());
-    fs << doc.GetString();
+    Document doc = get_json();
+#ifdef COLLECT_TEST_DATA
+    dump_test_results(doc, outdir + name_ + ".json");
+#else
+    string filename = "metric_" + name_ + ".json";
+    dump_json(doc, filename);
+#endif
 }
 
-void Metric::test_dump()
-{
-    // format the file name
-    string file_name;
-    file_name = outdir + name_ + ".json";
-
-    // Read the JSON array from the file
-    Document document;
-    Document::AllocatorType& allocator = document.GetAllocator();
-    std::ifstream ifs(file_name);
-
-    if (!ifs) {
-        // File doesn't exist, create a new one with an array
-        document.SetArray();
-    } else {
-        // File exists, read the existing data
-        IStreamWrapper isw(ifs);
-        document.ParseStream(isw);
-        if (!document.IsArray()) {
-            throw std::runtime_error("Existing file does not contain a JSON array");
-        }
-    }
-    ifs.close();
-
-    // Create a Document for the new object
-    Document newObjDoc = get_json_object();
-
-    // Append the new object to the array
-    document.PushBack(Value(newObjDoc, allocator), allocator);
-
-    StringBuffer strbuf;
-    Writer<StringBuffer> arr_writer(strbuf);
-    document.Accept(arr_writer);
-
-    std::ofstream ofs(file_name);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Could not open file for writing");
-    }
-    ofs << strbuf.GetString();
-    ofs.close();
-}
-
-rapidjson::Document Metric::get_json_object()
+rapidjson::Document Metric::get_json()
 {
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);

@@ -29,12 +29,6 @@
 #include <windflow.hpp>
 #include <ff/ff.hpp>
 
-#include <fstream>
-#include <rapidjson/document.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/istreamwrapper.h>
-
 #include "../includes/nodes/source.hpp"
 #include "../includes/nodes/join.hpp"
 #include "../includes/nodes/sink.hpp"
@@ -42,6 +36,7 @@
 #include "util/constants.hpp"
 #include "util/cli_util.hpp"
 #include "util/tuple.hpp"
+#include "util/util.hpp"
 
 using namespace std;
 using namespace chrono;
@@ -70,8 +65,6 @@ string outdir;
 test_types type;
 size_t num_keys = 0;
 size_t data_size = 0;
-
-vector<string> split(const string &, const char );
 
 vector<tuple_t> parse_dataset(const string &, const char );
 
@@ -309,36 +302,24 @@ int main(int argc, char *argv[])
 
     /// evaluate topology execution time
     volatile unsigned long start_time_main_usecs = current_time_usecs();
-    topology.run();
-    volatile unsigned long end_time_main_usecs = current_time_usecs();
-    
-    double elapsed_time_seconds = static_cast<double>(end_time_main_usecs - start_time_main_usecs) / (1000000.0);
-    double throughput = sent_tuples / elapsed_time_seconds;
-    
-    double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
-    cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
-    
-    //cout << "Dumping metrics" << endl;
-    util::metric_group.dump_all();
-#ifdef COLLECT_TEST_DATA
-    dumpThroughput((int)throughput, (outdir +"throughput.json"));
-#endif
+        topology.run();
+        volatile unsigned long end_time_main_usecs = current_time_usecs();
+        
+        double elapsed_time_seconds = static_cast<double>(end_time_main_usecs - start_time_main_usecs) / (1000000.0);
+        double throughput = sent_tuples / elapsed_time_seconds;
+        
+        double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
+        cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
+        
+        //cout << "Dumping metrics" << endl;
+        util::metric_group.dump_all();
+    #ifdef COLLECT_TEST_DATA
+        rapidjson::Document doc;
+        doc.SetInt(throughput);
+        dump_test_results(doc, (outdir +"throughput.json"));
+    #endif
     
     return 0;
-}
-
-vector<string> split(const string &target, const char delim)
-{
-    string temp;
-    stringstream stringstream{target};
-    vector<string> result;
-
-    while (getline(stringstream, temp, delim))
-    {
-        result.push_back(temp);
-    }
-
-    return result;
 }
 
 vector<tuple_t> parse_dataset(const string &file_path, const char delim)
@@ -409,37 +390,4 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
         file.close();
     }
     return dataset;
-}
-
-void dumpThroughput(int newThroughput, const std::string& filename) {
-    rapidjson::Document document;
-    rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
-
-    std::ifstream ifs(filename);
-    if (!ifs) {
-        // File doesn't exist, create a new one with an array
-        document.SetArray();
-    } else {
-        // File exists, read the existing data
-        rapidjson::IStreamWrapper isw(ifs);
-        document.ParseStream(isw);
-        if (!document.IsArray()) {
-            throw std::runtime_error("Existing file does not contain a JSON array");
-        }
-    }
-    ifs.close();
-    
-    // Append new data and write it back to the file
-    document.PushBack(rapidjson::Document().SetDouble(newThroughput), allocator);
-
-    rapidjson::StringBuffer strbuf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-    document.Accept(writer);
-
-    std::ofstream ofs(filename);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Could not open file for writing");
-    }
-    ofs << strbuf.GetString();
-    ofs.close();
 }

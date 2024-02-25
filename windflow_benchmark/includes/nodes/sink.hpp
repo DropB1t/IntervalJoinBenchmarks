@@ -81,17 +81,19 @@ public:
 #endif
             joined++;// tuples counter
             bytes_sum += tuple_size;
+        } else { // EOS received
+            util::metric_group.add("latency", latency_sampler);
         }
-        else { // EOS
-            double t_elapsed = static_cast<double>(current_time - app_start_time) / 1e09;
-            if (joined != 0) {
-                cout << "[Sink] joined: "
-                         << joined << " (tuples) "
-                         << (bytes_sum / 1048576) << " (MB), "
-                         << "bandwidth: "
-                         << joined / t_elapsed << " (tuples/s) " << endl;
-                util::metric_group.add("latency", latency_sampler);
-            }
+    }
+
+    ~Sink_Functor() {
+        double t_elapsed = static_cast<double>(current_time - app_start_time) / 1e09;
+        if (joined != 0) {
+            cout << "[Sink] joined: "
+                        << joined << " (tuples) "
+                        << (bytes_sum / 1048576) << " (MB), "
+                        << "bandwidth: "
+                        << joined / t_elapsed << " (tuples/s) " << endl;
         }
     }
 };
