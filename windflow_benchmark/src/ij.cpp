@@ -59,7 +59,7 @@ typedef enum
 atomic<long> sent_tuples; // total number of tuples sent by all the sources
 atomic<long> total_bytes; // total number of bytes processed by the system
 
-string outdir;
+string outdir="";
 
 test_types type;
 size_t num_keys = 0;

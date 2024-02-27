@@ -57,18 +57,18 @@ fi
 
 SAMPLING=100
 
-parallelism=(1 2 4 8 16 32)
-num_key=(100 1000 10000)
-batch_size=(0 16 32)
+parallelism=( 1 2 4 8 16 32 )
+num_key=( 100 1000 10000 )
+batch_size=( 0 16 32 )
 
-lower_bounds=(-500 -2500)
-upper_bounds=(500 2500)
+lower_bounds=( -500 -2500 )
+upper_bounds=( 500 2500 )
 
-exec_mode=(k d)
-real_type=(rd sd)
+exec_mode=( k d )
+real_type=( rd sd )
 
-synt_type=(su sz)
-zipfian_skews=(0.0 0.6 0.9)
+synt_type=( su sz )
+zipfian_skews=( 0.0 0.6 0.9 )
 
 main() {
     echo "${num_runs} runs will be executed for each benchmark."
@@ -82,12 +82,12 @@ main() {
 
 wf_run_synthetic_benchmarks() {
     cd $WF_BENCH_DIR || exit
-    local su=0
-    local sz_1=0
-    local sz_2=0
     for bound_idx in "${!lower_bounds[@]}"; do
-        for batch in "${batch_size[@]}"; do
-            for mode in "${exec_mode[@]}"; do 
+        for mode in "${exec_mode[@]}"; do 
+            for batch in "${batch_size[@]}"; do
+                local su=1
+                local sz_1=1
+                local sz_2=1
                 for skewness in "${zipfian_skews[@]}"; do
                     if [ "$skewness" == "0.0" ]; then
                         local type="${synt_type[0]}"
@@ -96,18 +96,18 @@ wf_run_synthetic_benchmarks() {
                     fi
                     for key in "${num_key[@]}"; do
                         gen_dataset "$key" "$type" "$skewness"
-                        for parallelism in "${parallelism[@]}"; do
+                        for p_deg in "${parallelism[@]}"; do
                             if [ "$type" == "su" ]; then
-                                local test_dir="$res_dir/wf/synthetic/${type}/test_$((su++))/"
+                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}/test_$((su++))/"
                             elif [ "$skewness" == "0.6" ]; then
-                                local test_dir="$res_dir/wf/synthetic/${type}_${skewness}/test_$((sz_1++))/"
+                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_1++))/"
                             else
-                                local test_dir="$res_dir/wf/synthetic/${type}_${skewness}/test_$((sz_2++))/"
+                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_2++))/"
                             fi
                             mkdir -p "$test_dir"
                             rm -f "$test_dir"/*
                             for run in $(seq 1 "$num_runs"); do
-                                ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism 1,1,"$parallelism",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                                ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism 1,1,"$p_deg",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
                                 sed -i '22,28d' "$test_dir/run_${run}.log"
                             done
                         done
@@ -121,22 +121,22 @@ wf_run_synthetic_benchmarks() {
 
 wf_run_real_benchmarks() {
     cd $WF_BENCH_DIR || exit
-    local rd=0
-    local sd=0
     for bound_idx in "${!lower_bounds[@]}"; do
-        for batch in "${batch_size[@]}"; do
-            for mode in "${exec_mode[@]}"; do 
+        for mode in "${exec_mode[@]}"; do 
+            for batch in "${batch_size[@]}"; do
+                local rd=1
+                local sd=1
                 for type in "${real_type[@]}"; do
-                    for parallelism in "${parallelism[@]}"; do
+                    for p_deg in "${parallelism[@]}"; do
                         if [ "$type" == "rd" ]; then
-                            local test_dir="$res_dir/wf/real/${type}/test_$((rd++))/"
+                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((rd++))/"
                         else
-                            local test_dir="$res_dir/wf/real/${type}/test_$((sd++))/"
+                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((sd++))/"
                         fi
                         mkdir -p "$test_dir"
                         rm -f "$test_dir"/*
                         for run in $(seq 1 "$num_runs"); do
-                            ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism 1,1,"$parallelism",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                            ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism 1,1,"$p_deg",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
                             sed -i '22,28d' "$test_dir/run_${run}.log"
                         done
                     done
@@ -149,9 +149,9 @@ wf_run_real_benchmarks() {
 
 fl_run_synthetic_benchmarks() {
     cd $FL_BENCH_DIR || exit
-    local su=0
-    local sz_1=0
-    local sz_2=0
+    local su=1
+    local sz_1=1
+    local sz_2=1
     for bound_idx in "${!lower_bounds[@]}"; do
         for skewness in "${zipfian_skews[@]}"; do
                 if [ "$skewness" == "0.0" ]; then
@@ -161,7 +161,7 @@ fl_run_synthetic_benchmarks() {
                 fi
             for key in "${num_key[@]}"; do
                 gen_dataset "$key" "$type" "$skewness"
-                for parallelism in "${parallelism[@]}"; do
+                for p_deg in "${parallelism[@]}"; do
                     if [ "$type" == "su" ]; then
                         local test_dir="$res_dir/fl/synthetic/${type}/test_$((su++))/"
                     elif [ "$skewness" == "0.6" ]; then
@@ -172,7 +172,7 @@ fl_run_synthetic_benchmarks() {
                     mkdir -p "$test_dir"
                     rm -f "$test_dir"/*
                     for run in $(seq 1 "$num_runs"); do
-                        java -Xmx5g -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism 1,1,"$parallelism",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                        java -Xmx5g -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism 1,1,"$p_deg",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
                     done
                     cp -f latency.json "$test_dir"
                     rm -f latency.json
@@ -187,11 +187,11 @@ fl_run_synthetic_benchmarks() {
 
 fl_run_real_benchmarks() {
     cd $FL_BENCH_DIR || exit
-    local rd=0
-    local sd=0
+    local rd=1
+    local sd=1
     for bound_idx in "${!lower_bounds[@]}"; do
         for type in "${real_type[@]}"; do
-            for parallelism in "${parallelism[@]}"; do
+            for p_deg in "${parallelism[@]}"; do
                 if [ "$type" == "rd" ]; then
                     local test_dir="$res_dir/fl/real/${type}/test_$((rd++))/"
                 else
@@ -200,7 +200,7 @@ fl_run_real_benchmarks() {
                 mkdir -p "$test_dir"
                 rm -f "$test_dir"/*
                 for run in $(seq 1 "$num_runs"); do
-                    java -Xmx5g -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism 1,1,"$parallelism",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                    java -Xmx5g -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism 1,1,"$p_deg",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
                 done
                 cp -f latency.json "$test_dir"
                 rm -f latency.json
