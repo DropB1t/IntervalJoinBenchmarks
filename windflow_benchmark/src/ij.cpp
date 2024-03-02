@@ -67,8 +67,6 @@ size_t data_size = 0;
 
 vector<tuple_t> parse_dataset(const string &, const char );
 
-void dumpThroughput(int, const std::string& );
-
 int main(int argc, char *argv[])
 {
     /// parse arguments from command line
@@ -300,17 +298,17 @@ int main(int argc, char *argv[])
 
     /// evaluate topology execution time
     volatile unsigned long start_time_main_usecs = current_time_usecs();
-        topology.run();
-        volatile unsigned long end_time_main_usecs = current_time_usecs();
-        
-        double elapsed_time_seconds = static_cast<double>(end_time_main_usecs - start_time_main_usecs) / (1000000.0);
-        double throughput = sent_tuples / elapsed_time_seconds;
-        
-        double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
-        cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
-        
-        //cout << "Dumping metrics" << endl;
-        util::metric_group.dump_all();
+    topology.run();
+    volatile unsigned long end_time_main_usecs = current_time_usecs();
+    
+    double elapsed_time_seconds = static_cast<double>(end_time_main_usecs - start_time_main_usecs) / (1000000.0);
+    double throughput = sent_tuples / elapsed_time_seconds;
+    
+    double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
+    cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
+    
+    //cout << "Dumping metrics" << endl;
+    util::metric_group.dump_all();
     #ifdef COLLECT_TEST_DATA
         rapidjson::Document doc;
         doc.SetInt(throughput);

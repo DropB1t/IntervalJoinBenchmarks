@@ -98,11 +98,11 @@ wf_run_synthetic_benchmarks() {
                         gen_dataset "$key" "$type" "$skewness"
                         for p_deg in "${parallelism[@]}"; do
                             if [ "$type" == "su" ]; then
-                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}/test_$((su++))/"
+                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}/test_$((su++))"
                             elif [ "$skewness" == "0.6" ]; then
-                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_1++))/"
+                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_1++))"
                             else
-                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_2++))/"
+                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_2++))"
                             fi
                             mkdir -p "$test_dir"
                             rm -f "$test_dir"/*
@@ -129,9 +129,9 @@ wf_run_real_benchmarks() {
                 for type in "${real_type[@]}"; do
                     for p_deg in "${parallelism[@]}"; do
                         if [ "$type" == "rd" ]; then
-                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((rd++))/"
+                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((rd++))"
                         else
-                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((sd++))/"
+                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((sd++))"
                         fi
                         mkdir -p "$test_dir"
                         rm -f "$test_dir"/*
@@ -149,6 +149,8 @@ wf_run_real_benchmarks() {
 
 fl_run_synthetic_benchmarks() {
     cd $FL_BENCH_DIR || exit
+    rm -f latency.json
+    rm -f throughput.json
     local su=1
     local sz_1=1
     local sz_2=1
@@ -163,11 +165,11 @@ fl_run_synthetic_benchmarks() {
                 gen_dataset "$key" "$type" "$skewness"
                 for p_deg in "${parallelism[@]}"; do
                     if [ "$type" == "su" ]; then
-                        local test_dir="$res_dir/fl/synthetic/${type}/test_$((su++))/"
+                        local test_dir="$res_dir/fl/synthetic/${type}/test_$((su++))"
                     elif [ "$skewness" == "0.6" ]; then
-                        local test_dir="$res_dir/fl/synthetic/${type}_${skewness}/test_$((sz_1++))/"
+                        local test_dir="$res_dir/fl/synthetic/${type}_${skewness}/test_$((sz_1++))"
                     else
-                        local test_dir="$res_dir/fl/synthetic/${type}_${skewness}/test_$((sz_2++))/"
+                        local test_dir="$res_dir/fl/synthetic/${type}_${skewness}/test_$((sz_2++))"
                     fi
                     mkdir -p "$test_dir"
                     rm -f "$test_dir"/*
@@ -187,15 +189,17 @@ fl_run_synthetic_benchmarks() {
 
 fl_run_real_benchmarks() {
     cd $FL_BENCH_DIR || exit
+    rm -f latency.json
+    rm -f throughput.json
     local rd=1
     local sd=1
     for bound_idx in "${!lower_bounds[@]}"; do
         for type in "${real_type[@]}"; do
             for p_deg in "${parallelism[@]}"; do
                 if [ "$type" == "rd" ]; then
-                    local test_dir="$res_dir/fl/real/${type}/test_$((rd++))/"
+                    local test_dir="$res_dir/fl/real/${type}/test_$((rd++))"
                 else
-                    local test_dir="$res_dir/fl/real/${type}/test_$((sd++))/"
+                    local test_dir="$res_dir/fl/real/${type}/test_$((sd++))"
                 fi
                 mkdir -p "$test_dir"
                 rm -f "$test_dir"/*
