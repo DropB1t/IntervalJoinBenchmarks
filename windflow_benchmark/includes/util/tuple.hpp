@@ -54,13 +54,13 @@ struct tuple_t
             
 };
 
-#if 1
+#if 0
 template<>
 struct std::hash<tuple_t>
 {
     size_t operator()(const tuple_t &t) const
     {
-        return std::hash<int>()(t.ts) ^ std::hash<int>()(t.key);
+        return std::hash<size_t>()(t.key) ^ std::hash<uint64_t>()(t.ts);
     }
 };
 #endif
