@@ -3,7 +3,6 @@ import json
 import argparse
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 
 from tol_colors import tol_cset
@@ -64,7 +63,7 @@ def draw_latency_chart(tests_path):
 
     plt.xlabel('Parallelism')
     plt.ylabel('Latency (ms)')
-    plt.title('Latency chart')
+    #plt.title('Latency chart')
     #plt.show()
 
     fig.savefig(os.path.join(tests_path, 'latency.svg'), dpi=100)

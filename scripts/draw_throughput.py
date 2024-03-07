@@ -47,7 +47,7 @@ def draw_throughput_chart(tests_path):
 
     plt.xlabel('Parallelism')
     plt.ylabel('Throughput (tuples/s)')
-    plt.title('Throughput Chart')
+    #plt.title('Throughput Chart')
     #plt.show()
 
     fig.savefig(os.path.join(tests_path, 'throughput.png'), dpi=100)

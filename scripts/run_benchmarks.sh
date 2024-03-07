@@ -54,6 +54,15 @@ if [ ! -d "$MAIN_DIR/datasets" ]; then
     rm datasets.tar.gz
 fi
 
+if command -v pip &> /dev/null; then
+    cd $SCRIPT_DIR || exit
+    pip install -r requirements.txt 1> /dev/null
+    cd - || exit
+else
+    echo "Error: pip command not found. Please make sure pip is installed."
+    #exit 1
+fi
+
 SAMPLING=100
 
 parallelism=( 1 2 4 8 16 32 )
