@@ -20,19 +20,21 @@ fi
 
 cd "$(dirname "$0")"
 SCRIPT_DIR=$(pwd)
-GEN_DIR="$SCRIPT_DIR/gen_dataset"
-WF_BENCH_DIR="$SCRIPT_DIR/windflow_benchmark"
-FL_BENCH_DIR="$SCRIPT_DIR/flink_benchmark"
+cd ..
+MAIN_DIR=$(pwd)
+GEN_DIR="$MAIN_DIR/gen_dataset"
+WF_BENCH_DIR="$MAIN_DIR/windflow_benchmark"
+FL_BENCH_DIR="$MAIN_DIR/flink_benchmark"
 
 num_runs=5
-res_dir="$SCRIPT_DIR/results"
+res_dir="$MAIN_DIR/results"
 
 options='r:d:'
 while getopts $options option
 do
     case "$option" in
         r  ) num_runs="$OPTARG";;
-        d  ) res_dir="$SCRIPT_DIR/$OPTARG" ;;
+        d  ) res_dir="$MAIN_DIR/$OPTARG" ;;
         \? ) echo "Unknown option: -$OPTARG" >&2; exit 1;;
         :  ) echo "Missing option argument for -$OPTARG" >&2; exit 1;;
         *  ) echo "Unimplemented option: -$OPTARG" >&2; exit 1;;
@@ -46,11 +48,8 @@ then
    helpFunction
 fi
 
-#mkdir -p "$res_dir/wf"
-#mkdir -p "$res_dir/fl"
-
-if [ ! -d "$SCRIPT_DIR/datasets" ]; then
-    wget -q -O "$SCRIPT_DIR/datasets.tar.gz" "https://www.dropbox.com/scl/fi/y4qkcvci7yqcypg41tu85/datasets.tar.gz?rlkey=6o2d4byhx95d860pojddka4iq&dl=0"
+if [ ! -d "$MAIN_DIR/datasets" ]; then
+    wget -q -O "$MAIN_DIR/datasets.tar.gz" "https://www.dropbox.com/scl/fi/y4qkcvci7yqcypg41tu85/datasets.tar.gz?rlkey=6o2d4byhx95d860pojddka4iq&dl=0"
     tar -zvxf datasets.tar.gz
     rm datasets.tar.gz
 fi
@@ -64,7 +63,7 @@ batch_size=( 0 16 32 )
 lower_bounds=( -500 -2500 )
 upper_bounds=( 500 2500 )
 
-exec_mode=( k d )
+exec_mode=( k )
 real_type=( rd sd )
 
 synt_type=( su sz )
@@ -83,11 +82,13 @@ main() {
 wf_run_synthetic_benchmarks() {
     cd $WF_BENCH_DIR || exit
     for bound_idx in "${!lower_bounds[@]}"; do
+        if [ "${upper_bounds[$bound_idx]}" == 500 ]; then
+            local boundir="1s"
+        else
+            local boundir="5s"
+        fi
         for mode in "${exec_mode[@]}"; do 
             for batch in "${batch_size[@]}"; do
-                local su=1
-                local sz_1=1
-                local sz_2=1
                 for skewness in "${zipfian_skews[@]}"; do
                     if [ "$skewness" == "0.0" ]; then
                         local type="${synt_type[0]}"
@@ -95,14 +96,22 @@ wf_run_synthetic_benchmarks() {
                         local type="${synt_type[1]}"
                     fi
                     for key in "${num_key[@]}"; do
+                        if [ "$key" = 100 ]; then
+                            local keydir="100_keys"
+                        elif [ "$key" = 1000 ]; then
+                            local keydir="1k_keys"
+                        else
+                            local keydir="10k_keys"
+                        fi
                         gen_dataset "$key" "$type" "$skewness"
+                        local i=1
                         for p_deg in "${parallelism[@]}"; do
                             if [ "$type" == "su" ]; then
-                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}/test_$((su++))"
+                                local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}/${keydir}/test$((i++))_${p_deg}p"
                             elif [ "$skewness" == "0.6" ]; then
-                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_1++))"
+                                local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
                             else
-                                local test_dir="$res_dir/wf/synthetic/${mode}_mode/${batch}_batch_${type}_${skewness}/test_$((sz_2++))"
+                                local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
                             fi
                             mkdir -p "$test_dir"
                             rm -f "$test_dir"/*
@@ -111,6 +120,9 @@ wf_run_synthetic_benchmarks() {
                                 sed -i '22,28d' "$test_dir/run_${run}.log"
                             done
                         done
+                        chart_path="${test_dir%/*}/"
+                        python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
+                        python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
                     done
                 done
             done
@@ -122,16 +134,20 @@ wf_run_synthetic_benchmarks() {
 wf_run_real_benchmarks() {
     cd $WF_BENCH_DIR || exit
     for bound_idx in "${!lower_bounds[@]}"; do
+        if [ "${upper_bounds[$bound_idx]}" == 500 ]; then
+            local boundir="1s"
+        else
+            local boundir="5s"
+        fi
         for mode in "${exec_mode[@]}"; do 
             for batch in "${batch_size[@]}"; do
-                local rd=1
-                local sd=1
                 for type in "${real_type[@]}"; do
+                    local i=1
                     for p_deg in "${parallelism[@]}"; do
                         if [ "$type" == "rd" ]; then
-                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((rd++))"
+                            local test_dir="$res_dir/wf/real_${boundir}/${mode}_mode/${batch}_batch_${type}/test$((i++))_${p_deg}p"
                         else
-                            local test_dir="$res_dir/wf/real/${mode}_mode/${batch}_batch_${type}/test_$((sd++))"
+                            local test_dir="$res_dir/wf/real_${boundir}/${mode}_mode/${batch}_batch_${type}/test$((i++))_${p_deg}p"
                         fi
                         mkdir -p "$test_dir"
                         rm -f "$test_dir"/*
@@ -140,6 +156,9 @@ wf_run_real_benchmarks() {
                             sed -i '22,28d' "$test_dir/run_${run}.log"
                         done
                     done
+                    chart_path="${test_dir%/*}/"
+                    python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
+                    python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
                 done
             done
         done
@@ -151,10 +170,12 @@ fl_run_synthetic_benchmarks() {
     cd $FL_BENCH_DIR || exit
     rm -f latency.json
     rm -f throughput.json
-    local su=1
-    local sz_1=1
-    local sz_2=1
     for bound_idx in "${!lower_bounds[@]}"; do
+        if [ "${upper_bounds[$bound_idx]}" == 500 ]; then
+            local boundir="1s"
+        else
+            local boundir="5s"
+        fi
         for skewness in "${zipfian_skews[@]}"; do
                 if [ "$skewness" == "0.0" ]; then
                     local type="${synt_type[0]}"
@@ -162,14 +183,22 @@ fl_run_synthetic_benchmarks() {
                     local type="${synt_type[1]}"
                 fi
             for key in "${num_key[@]}"; do
+                if [ "$key" = 100 ]; then
+                    local keydir="100_keys"
+                elif [ "$key" = 1000 ]; then
+                    local keydir="1k_keys"
+                else
+                    local keydir="10k_keys"
+                fi
                 gen_dataset "$key" "$type" "$skewness"
+                local i=1
                 for p_deg in "${parallelism[@]}"; do
                     if [ "$type" == "su" ]; then
-                        local test_dir="$res_dir/fl/synthetic/${type}/test_$((su++))"
+                        local test_dir="$res_dir/fl/synthetic_${boundir}/${type}/${keydir}/test$((i++))_${p_deg}p"
                     elif [ "$skewness" == "0.6" ]; then
-                        local test_dir="$res_dir/fl/synthetic/${type}_${skewness}/test_$((sz_1++))"
+                        local test_dir="$res_dir/fl/synthetic_${boundir}/${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
                     else
-                        local test_dir="$res_dir/fl/synthetic/${type}_${skewness}/test_$((sz_2++))"
+                        local test_dir="$res_dir/fl/synthetic_${boundir}/${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
                     fi
                     mkdir -p "$test_dir"
                     rm -f "$test_dir"/*
@@ -181,6 +210,9 @@ fl_run_synthetic_benchmarks() {
                     cp -f throughput.json "$test_dir"
                     rm -f throughput.json
                 done
+                chart_path="${test_dir%/*}/"
+                python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
+                python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
             done
         done
     done
@@ -191,15 +223,19 @@ fl_run_real_benchmarks() {
     cd $FL_BENCH_DIR || exit
     rm -f latency.json
     rm -f throughput.json
-    local rd=1
-    local sd=1
     for bound_idx in "${!lower_bounds[@]}"; do
+        if [ "${upper_bounds[$bound_idx]}" == 500 ]; then
+            local boundir="1s"
+        else
+            local boundir="5s"
+        fi
         for type in "${real_type[@]}"; do
+            local i=1
             for p_deg in "${parallelism[@]}"; do
                 if [ "$type" == "rd" ]; then
-                    local test_dir="$res_dir/fl/real/${type}/test_$((rd++))"
+                    local test_dir="$res_dir/fl/real_${boundir}/${type}/test$((i++))_${p_deg}p"
                 else
-                    local test_dir="$res_dir/fl/real/${type}/test_$((sd++))"
+                    local test_dir="$res_dir/fl/real_${boundir}/${type}/test$((i++))_${p_deg}p"
                 fi
                 mkdir -p "$test_dir"
                 rm -f "$test_dir"/*
@@ -211,6 +247,9 @@ fl_run_real_benchmarks() {
                 cp -f throughput.json "$test_dir"
                 rm -f throughput.json
             done
+            chart_path="${test_dir%/*}/"
+            python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
+            python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
         done
     done
     cd - || exit

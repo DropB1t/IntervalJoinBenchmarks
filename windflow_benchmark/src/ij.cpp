@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 case 'o': {
-                    outdir = string(optarg);
+                    outdir = string(optarg) + "/";
                     break;
                 }
                 default: {

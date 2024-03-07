@@ -28,7 +28,7 @@
 #include <sstream>
 #include <fstream>
 #include <rapidjson/document.h>
-#include <rapidjson/writer.h>
+#include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/istreamwrapper.h>
 
@@ -77,7 +77,7 @@ inline void dump_test_results(Document &doc, const std::string& filename) {
     document.PushBack(doc, allocator);
 
     StringBuffer strbuf;
-    Writer<StringBuffer> writer(strbuf);
+    PrettyWriter<StringBuffer> writer(strbuf);
     document.Accept(writer);
 
     std::ofstream ofs(filename);
