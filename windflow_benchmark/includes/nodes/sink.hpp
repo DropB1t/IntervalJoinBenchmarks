@@ -72,7 +72,7 @@ public:
         }
         if (t) {
             current_time = current_time_nsecs();
-            unsigned long tuple_latency = (current_time - (*t).ts) / 1e06;
+            unsigned long tuple_latency = (current_time - (*t).ts) / 1e03; // us precision
             latency_sampler.add(tuple_latency, current_time);
 #if 0
             if (joined < 20000) {

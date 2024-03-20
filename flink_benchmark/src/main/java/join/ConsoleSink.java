@@ -65,7 +65,7 @@ public class ConsoleSink extends RichSinkFunction<SourceEvent> {
 
         // evaluate latency
         long now = System.nanoTime();
-        latency.add((double)((now - timestamp)/ 1e6), System.nanoTime()); // ms precision
+        latency.add((double)((now - timestamp)/ 1e3), System.nanoTime()); // us precision
         /* 
         if (processed < 20000)  
             System.out.println("" + key + "\t" + (context.timestamp()*1000));
