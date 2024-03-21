@@ -46,13 +46,14 @@ def draw_latency_chart(tests_path):
         with open(throughput_file, 'r') as file:
             data = json.load(file)
 
-            lower_whiskers = ([entry['0'] for entry in data])
-            _5th_percentile = ([entry['5'] for entry in data])
-            lower_quartile = ([entry['25'] for entry in data])
-            _50th_percentile = ([entry['50'] for entry in data])
-            upper_quartile = ([entry['75'] for entry in data])
-            _95th_percentile = ([entry['95'] for entry in data])
-            upper_whiskers = ([entry['100'] for entry in data])
+            #Dividing by 1000 to convert from us to ms
+            lower_whiskers = ([entry['0']/1000 for entry in data])
+            _5th_percentile = ([entry['5']/1000 for entry in data])
+            lower_quartile = ([entry['25']/1000 for entry in data])
+            _50th_percentile = ([entry['50']/1000 for entry in data])
+            upper_quartile = ([entry['75']/1000 for entry in data])
+            _95th_percentile = ([entry['95']/1000 for entry in data])
+            upper_whiskers = ([entry['100']/1000 for entry in data])
             
             #means = ([entry['mean'] for entry in data])
             #y_line_points.append(means)
@@ -75,7 +76,7 @@ def draw_latency_chart(tests_path):
     fig.set_dpi(100)
 
     plt.xlabel('Parallelism')
-    plt.ylabel('Latency (us)')
+    plt.ylabel('Latency (ms)')
     #plt.title('Latency chart')
     #plt.show()
 

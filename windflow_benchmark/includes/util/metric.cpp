@@ -99,7 +99,7 @@ rapidjson::Document Metric::get_json()
     // XXX no interpolation since we are dealing with *many* samples
 
     // add percentiles
-    for (auto percentile : {0.05, 0.25, 0.5, 0.75, 0.95, 1.0}) {
+    for (auto percentile : {0.05, 0.25, 0.5, 0.75, 0.95}) {
         auto pointer = samples_.begin() + samples_.size() * percentile;
         std::nth_element(samples_.begin(), pointer, samples_.end());
         auto label = std::to_string(int(percentile * 100));
@@ -108,8 +108,8 @@ rapidjson::Document Metric::get_json()
         writer.Double(value);
     }
 
-    //writer.Key("100");
-    //writer.Double(max);
+    writer.Key("100");
+    writer.Double(max);
 
     writer.EndObject();
 

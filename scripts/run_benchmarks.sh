@@ -63,7 +63,7 @@ else
     #exit 1
 fi
 
-SAMPLING=100
+SAMPLING=250
 
 parallelism=( 1 2 4 8 16 32 )
 num_key=( 100 1000 10000 )
@@ -130,8 +130,8 @@ wf_run_synthetic_benchmarks() {
                             done
                         done
                         chart_path="${test_dir%/*}/"
-                        python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
-                        python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
+                        python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf th
+                        python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf lt
                     done
                 done
             done
@@ -166,8 +166,8 @@ wf_run_real_benchmarks() {
                         done
                     done
                     chart_path="${test_dir%/*}/"
-                    python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
-                    python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
+                    python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf th
+                    python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf lt
                 done
             done
         done
@@ -220,8 +220,8 @@ fl_run_synthetic_benchmarks() {
                     rm -f throughput.json
                 done
                 chart_path="${test_dir%/*}/"
-                python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
-                python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
+                python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl th
+                python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl lt
             done
         done
     done
@@ -257,8 +257,8 @@ fl_run_real_benchmarks() {
                 rm -f throughput.json
             done
             chart_path="${test_dir%/*}/"
-            python3 $SCRIPT_DIR/draw_throughput.py "$chart_path"
-            python3 $SCRIPT_DIR/draw_latency.py "$chart_path"
+            python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl th
+            python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl lt
         done
     done
     cd - || exit
