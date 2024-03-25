@@ -177,7 +177,8 @@ public class IntervalJoinBench {
         // Set up the streaming execution Environment
         Configuration conf_flink = new Configuration();
         conf_flink.set(TaskManagerOptions.MANAGED_MEMORY_FRACTION, 0.5f);
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf_flink);
+        conf_flink.set(TaskManagerOptions.NUM_TASK_SLOTS, 64);
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(conf_flink);
         env.getConfig().disableGenericTypes();
        
         DataStream<SourceEvent> orangeStream = env.addSource(orangeSource)
