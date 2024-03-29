@@ -24,23 +24,24 @@
 package join.sources;
 
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import join.SourceEvent;
+import join.Tuple;
 import util.ThroughputCounter;
 
 import java.util.ArrayList;
 
-public class FileSource extends RichParallelSourceFunction<SourceEvent> {
+public class FileSource extends RichParallelSourceFunction<Tuple3<Integer, Integer, Long>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileSource.class);
 
     private long t_start;
     private long t_end;
 
-    private ArrayList<SourceEvent> dataset;
+    private ArrayList<Tuple> dataset;
     private int data_size;
     
     private final long runtime;
@@ -53,7 +54,7 @@ public class FileSource extends RichParallelSourceFunction<SourceEvent> {
     
     private long ts = 1704106800000L; // January 1, 2024 12:00:00 AM in ms
 
-    public FileSource(long _runtime, int _gen_rate, ArrayList<SourceEvent> _dataset) {
+    public FileSource(long _runtime, int _gen_rate, ArrayList<Tuple> _dataset) {
         this.runtime = (long) (_runtime * 1e9); // ns
         this.gen_rate = _gen_rate;
 
@@ -71,25 +72,20 @@ public class FileSource extends RichParallelSourceFunction<SourceEvent> {
     }
 
     @Override
-    public void run(final SourceContext<SourceEvent> ctx) throws Exception {
+    public void run(final SourceContext<Tuple3<Integer, Integer, Long>> ctx) throws Exception {
         this.t_start = System.nanoTime();
 
         // generation loop
         while ((System.nanoTime() - this.t_start < runtime) && running) {
-            SourceEvent tuple = dataset.get(index);
-            ts += tuple.f2 != 0L ? tuple.f2 : 500L;
+            Tuple tuple = dataset.get(index);
+            ts += tuple.ts_off != 0L ? tuple.ts_off : 500L;
             
-            SourceEvent input = new SourceEvent();
-            input.f0 = tuple.f0;
-            input.f1 = tuple.f1;
-            input.f2 = System.nanoTime();
-            ctx.collectWithTimestamp(input, ts);
-            /* 
-            if (generated < 15)
-                LOG.info("  * key-> " + tuple.f0 + ", ts-> " + ts);
-             */
+            ctx.collectWithTimestamp(new Tuple3<>(tuple.key, tuple.value, System.nanoTime()), ts);
             generated++;
             index++;
+            
+            /* if (generated < 15)
+                LOG.info(tuple.toString() + " | " + ts); */
             
             if (gen_rate != 0) { // limit generation rate with active delay
                 long delay_nsec = (long) ((1.0d / gen_rate) * 1e9);

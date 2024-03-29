@@ -23,6 +23,7 @@
 
 package join;
 
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.co.ProcessJoinFunction;
 import org.apache.flink.util.Collector;
@@ -30,7 +31,7 @@ import org.slf4j.Logger;
 
 import util.Log;
 
-public class IntervalJoin extends ProcessJoinFunction<SourceEvent, SourceEvent, SourceEvent> {
+public class IntervalJoin extends ProcessJoinFunction<Tuple3<Integer, Integer, Long>, Tuple3<Integer, Integer, Long>, Tuple3<Integer, Integer, Long>> {
 
     private static final Logger LOG = Log.get(IntervalJoin.class);
     private long processed;
@@ -44,9 +45,9 @@ public class IntervalJoin extends ProcessJoinFunction<SourceEvent, SourceEvent, 
     }
 
     @Override
-    public void processElement(SourceEvent first, SourceEvent second, Context ctx, Collector<SourceEvent> out) throws Exception {
+    public void processElement(Tuple3<Integer, Integer, Long> first, Tuple3<Integer, Integer, Long> second, Context ctx, Collector<Tuple3<Integer, Integer, Long>> out) throws Exception {
         //LOG.info(first.f0 + " | " + second.f0);
-        SourceEvent out_t = new SourceEvent();
+        Tuple3<Integer, Integer, Long> out_t = new Tuple3<Integer, Integer, Long>();
         out_t.f0 = first.f0;
         out_t.f1 = Integer.valueOf(first.f1+second.f1);
         out_t.f2 = Long.valueOf(Math.max(first.f2, second.f2));

@@ -65,7 +65,8 @@ fi
 
 SAMPLING=250
 
-parallelism=( 1 2 4 8 16 32 )
+parallelism=( 1 2 3 4 5 6 7 8 16 32 )
+source_degrees=( 1 2 3 4 )
 num_key=( 100 1000 10000 )
 batch_size=( 0 16 32 )
 
@@ -113,25 +114,27 @@ wf_run_synthetic_benchmarks() {
                             local keydir="10k_keys"
                         fi
                         gen_dataset "$key" "$type" "$skewness"
-                        local i=1
-                        for p_deg in "${parallelism[@]}"; do
-                            if [ "$type" == "su" ]; then
-                                local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}/${keydir}/test$((i++))_${p_deg}p"
-                            elif [ "$skewness" == "0.6" ]; then
-                                local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
-                            else
-                                local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
-                            fi
-                            mkdir -p "$test_dir"
-                            rm -f "$test_dir"/*
-                            for run in $(seq 1 "$num_runs"); do
-                                ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism 1,1,"$p_deg",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
-                                sed -i '22,28d' "$test_dir/run_${run}.log"
+                        for s_deg in "${source_degrees[@]}"; do
+                            local i=1
+                            for p_deg in "${parallelism[@]}"; do
+                                if [ "$type" == "su" ]; then
+                                    local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                                elif [ "$skewness" == "0.6" ]; then
+                                    local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}_${skewness}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                                else
+                                    local test_dir="$res_dir/wf/synthetic_${boundir}/${mode}_mode/${batch}_batch_${type}_${skewness}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                                fi
+                                mkdir -p "$test_dir"
+                                rm -f "$test_dir"/*
+                                for run in $(seq 1 "$num_runs"); do
+                                    ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism "$s_deg","$s_deg","$p_deg",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                                    sed -i '22,28d' "$test_dir/run_${run}.log"
+                                done
                             done
+                            chart_path="${test_dir%/*}/"
+                            python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf th
+                            python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf lt
                         done
-                        chart_path="${test_dir%/*}/"
-                        python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf th
-                        python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf lt
                     done
                 done
             done
@@ -151,23 +154,25 @@ wf_run_real_benchmarks() {
         for mode in "${exec_mode[@]}"; do 
             for batch in "${batch_size[@]}"; do
                 for type in "${real_type[@]}"; do
-                    local i=1
-                    for p_deg in "${parallelism[@]}"; do
-                        if [ "$type" == "rd" ]; then
-                            local test_dir="$res_dir/wf/real_${boundir}/${mode}_mode/${batch}_batch_${type}/test$((i++))_${p_deg}p"
-                        else
-                            local test_dir="$res_dir/wf/real_${boundir}/${mode}_mode/${batch}_batch_${type}/test$((i++))_${p_deg}p"
-                        fi
-                        mkdir -p "$test_dir"
-                        rm -f "$test_dir"/*
-                        for run in $(seq 1 "$num_runs"); do
-                            ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism 1,1,"$p_deg",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
-                            sed -i '22,28d' "$test_dir/run_${run}.log"
+                    for s_deg in "${source_degrees[@]}"; do
+                        local i=1
+                        for p_deg in "${parallelism[@]}"; do
+                            if [ "$type" == "rd" ]; then
+                                local test_dir="$res_dir/wf/real_${boundir}/${mode}_mode/${batch}_batch_${type}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                            else
+                                local test_dir="$res_dir/wf/real_${boundir}/${mode}_mode/${batch}_batch_${type}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                            fi
+                            mkdir -p "$test_dir"
+                            rm -f "$test_dir"/*
+                            for run in $(seq 1 "$num_runs"); do
+                                ./bin/ij --rate 0 --sampling "$SAMPLING" --batch "$batch" --parallelism "$s_deg","$s_deg","$p_deg",1 --type "$type" -m "$mode" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                                sed -i '22,28d' "$test_dir/run_${run}.log"
+                            done
                         done
+                        chart_path="${test_dir%/*}/"
+                        python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf th
+                        python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf lt
                     done
-                    chart_path="${test_dir%/*}/"
-                    python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf th
-                    python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf lt
                 done
             done
         done
@@ -200,28 +205,30 @@ fl_run_synthetic_benchmarks() {
                     local keydir="10k_keys"
                 fi
                 gen_dataset "$key" "$type" "$skewness"
-                local i=1
-                for p_deg in "${parallelism[@]}"; do
-                    if [ "$type" == "su" ]; then
-                        local test_dir="$res_dir/fl/synthetic_${boundir}/${type}/${keydir}/test$((i++))_${p_deg}p"
-                    elif [ "$skewness" == "0.6" ]; then
-                        local test_dir="$res_dir/fl/synthetic_${boundir}/${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
-                    else
-                        local test_dir="$res_dir/fl/synthetic_${boundir}/${type}_${skewness}/${keydir}/test$((i++))_${p_deg}p"
-                    fi
-                    mkdir -p "$test_dir"
-                    rm -f "$test_dir"/*
-                    for run in $(seq 1 "$num_runs"); do
-                        java -Xmx5g -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism 1,1,"$p_deg",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                for s_deg in "${source_degrees[@]}"; do
+                    local i=1
+                    for p_deg in "${parallelism[@]}"; do
+                        if [ "$type" == "su" ]; then
+                            local test_dir="$res_dir/fl/synthetic_${boundir}/${type}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                        elif [ "$skewness" == "0.6" ]; then
+                            local test_dir="$res_dir/fl/synthetic_${boundir}/${type}_${skewness}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                        else
+                            local test_dir="$res_dir/fl/synthetic_${boundir}/${type}_${skewness}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                        fi
+                        mkdir -p "$test_dir"
+                        rm -f "$test_dir"/*
+                        for run in $(seq 1 "$num_runs"); do
+                            java -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism "$s_deg","$s_deg","$p_deg",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                        done
+                        cp -f latency.json "$test_dir"
+                        rm -f latency.json
+                        cp -f throughput.json "$test_dir"
+                        rm -f throughput.json
                     done
-                    cp -f latency.json "$test_dir"
-                    rm -f latency.json
-                    cp -f throughput.json "$test_dir"
-                    rm -f throughput.json
+                    chart_path="${test_dir%/*}/"
+                    python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl th
+                    python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl lt
                 done
-                chart_path="${test_dir%/*}/"
-                python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl th
-                python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl lt
             done
         done
     done
@@ -239,26 +246,28 @@ fl_run_real_benchmarks() {
             local boundir="5s"
         fi
         for type in "${real_type[@]}"; do
-            local i=1
-            for p_deg in "${parallelism[@]}"; do
-                if [ "$type" == "rd" ]; then
-                    local test_dir="$res_dir/fl/real_${boundir}/${type}/test$((i++))_${p_deg}p"
-                else
-                    local test_dir="$res_dir/fl/real_${boundir}/${type}/test$((i++))_${p_deg}p"
-                fi
-                mkdir -p "$test_dir"
-                rm -f "$test_dir"/*
-                for run in $(seq 1 "$num_runs"); do
-                    java -Xmx5g -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism 1,1,"$p_deg",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+            for s_deg in "${source_degrees[@]}"; do
+                local i=1
+                for p_deg in "${parallelism[@]}"; do
+                    if [ "$type" == "rd" ]; then
+                        local test_dir="$res_dir/fl/real_${boundir}/${type}/test_$((i++))_${p_deg}p"
+                    else
+                        local test_dir="$res_dir/fl/real_${boundir}/${type}/test_$((i++))_${p_deg}p"
+                    fi
+                    mkdir -p "$test_dir"
+                    rm -f "$test_dir"/*
+                    for run in $(seq 1 "$num_runs"); do
+                        java -jar target/IntervalJoinBench-1.0.jar --rate 0 --sampling "$SAMPLING" --parallelism "$s_deg","$s_deg","$p_deg",1 --type "$type" -l "${lower_bounds[$bound_idx]}" -u "${upper_bounds[$bound_idx]}" --chaining -o "$test_dir" | tee "$test_dir/run_${run}.log"
+                    done
+                    cp -f latency.json "$test_dir"
+                    rm -f latency.json
+                    cp -f throughput.json "$test_dir"
+                    rm -f throughput.json
                 done
-                cp -f latency.json "$test_dir"
-                rm -f latency.json
-                cp -f throughput.json "$test_dir"
-                rm -f throughput.json
+                chart_path="${test_dir%/*}/"
+                python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl th
+                python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl lt
             done
-            chart_path="${test_dir%/*}/"
-            python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl th
-            python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl lt
         done
     done
     cd - || exit

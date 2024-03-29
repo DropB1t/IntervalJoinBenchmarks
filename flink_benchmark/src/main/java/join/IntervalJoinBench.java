@@ -39,9 +39,11 @@ import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkGeneratorSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
@@ -145,8 +147,8 @@ public class IntervalJoinBench {
         int sink_deg = parallelism_degs[3];
 
         String rpath, lpath;
-        ArrayList<SourceEvent> rdataset, ldataset;
-        RichParallelSourceFunction<SourceEvent> orangeSource, greenSource;
+        ArrayList<Tuple> rdataset, ldataset;
+        RichParallelSourceFunction<Tuple3<Integer, Integer, Long>> orangeSource, greenSource;
 
         switch (type) {
             case ZIPF_SYNTHETIC:
@@ -175,21 +177,21 @@ public class IntervalJoinBench {
         greenSource = new FileSource(runtime, rate, ldataset);
 
         // Set up the streaming execution Environment
-        Configuration conf_flink = new Configuration();
-        conf_flink.set(TaskManagerOptions.MANAGED_MEMORY_FRACTION, 0.5f);
-        conf_flink.set(TaskManagerOptions.NUM_TASK_SLOTS, 64);
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(conf_flink);
+        Configuration flink_config = new Configuration();
+        flink_config.set(TaskManagerOptions.TOTAL_FLINK_MEMORY, MemorySize.ofMebiBytes(5120));
+        //flink_config.set(TaskManagerOptions.NUM_TASK_SLOTS, 8);
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(flink_config);
         env.getConfig().disableGenericTypes();
        
-        DataStream<SourceEvent> orangeStream = env.addSource(orangeSource)
+        DataStream<Tuple3<Integer, Integer, Long>> orangeStream = env.addSource(orangeSource)
                                                     .setParallelism(source1_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<SourceEvent> greenStream = env.addSource(greenSource)
+        DataStream<Tuple3<Integer, Integer, Long>> greenStream = env.addSource(greenSource)
                                                     .setParallelism(source2_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<SourceEvent> joinedStream = orangeStream
+        DataStream<Tuple3<Integer, Integer, Long>> joinedStream = orangeStream
                                                 .keyBy(new DataKeySelector())
                                                 .intervalJoin(greenStream.keyBy(new DataKeySelector()))
                                                 .between(Time.milliseconds(lower_bound), Time.milliseconds(upper_bound))
@@ -275,8 +277,8 @@ public class IntervalJoinBench {
         return Stream.of(stringArray).mapToInt(Integer::parseInt).toArray();
     }
 
-    private static ArrayList<SourceEvent> parseDataset(String _file_path, String splitter) {
-        ArrayList<SourceEvent> ds = new ArrayList<>();
+    private static ArrayList<Tuple> parseDataset(String _file_path, String splitter) {
+        ArrayList<Tuple> ds = new ArrayList<>();
         try {
             Scanner scan = new Scanner(new File(_file_path));
             if (type == testType.UNIFORM_SYNTHETIC || type == testType.ZIPF_SYNTHETIC) {
@@ -294,38 +296,33 @@ public class IntervalJoinBench {
             while (scan.hasNextLine()) {
                 String line = scan.nextLine();
                 if (line.isBlank()) { continue; }
-                SourceEvent tuple = new SourceEvent();
+                Tuple tuple;
 
                 String[] fields = line.split(splitter); // regex quantifier (matches one or many split char)
                 switch (type) {
-                    case UNIFORM_SYNTHETIC:
-                    case ZIPF_SYNTHETIC:
-                        if (fields.length != 2) {
-                            LOG.info("Error in parsing Syntethic tuple");
-                            System.exit(1);
-                        }
-                        tuple.f0 = Integer.valueOf(fields[0]); // Key
-                        tuple.f1 = 5;                          // Value
-                        tuple.f2 = Long.valueOf(fields[1]);    // Timestamp
-                        break;
                     case ROVIO_TEST:
                         if (fields.length != 4) {
                             LOG.info("Error in parsing tuple");
                             System.exit(1);
                         }
-                        tuple.f0 = Integer.valueOf(fields[0]);  // Key
-                        tuple.f1 = Integer.valueOf(fields[2]);  // Value
-                        tuple.f2 = 0L;                          // Timestamp
-                        break;
+                        tuple = new Tuple(Integer.valueOf(fields[0]), Integer.valueOf(fields[2])); // Key - Value
+                    break;
                     case STOCK_TEST:
                         if (fields.length != 2) {
                             LOG.info("Error in parsing tuple");
                             System.exit(1);
                         }
-                        tuple.f0 = Integer.valueOf(fields[0]);  // Key
-                        tuple.f1 = Integer.valueOf(fields[1]);  // Value
-                        tuple.f2 = 0L;                          // Timestamp
-                        break;
+                        tuple = new Tuple(Integer.valueOf(fields[0]), Integer.valueOf(fields[1])); // Key - Value
+                    break;
+                    case UNIFORM_SYNTHETIC:
+                    case ZIPF_SYNTHETIC:
+                    default:
+                        if (fields.length != 2) {
+                            LOG.info("Error in parsing Syntethic tuple");
+                            System.exit(1);
+                        }
+                        tuple = new Tuple(Integer.valueOf(fields[0]), Long.valueOf(fields[1])); // Key - Timestamp
+                    break;
                 }
                 ds.add(tuple);
             }
@@ -340,14 +337,14 @@ public class IntervalJoinBench {
         return ds;
     }
 
-    private static class DataKeySelector implements KeySelector<SourceEvent, Integer> {
+    private static class DataKeySelector implements KeySelector<Tuple3<Integer, Integer, Long>, Integer> {
         @Override
-        public Integer getKey(SourceEvent value) {
+        public Integer getKey(Tuple3<Integer, Integer, Long> value) {
             return value.f0;
         }
     }
 
-    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<SourceEvent> {
+    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<Tuple3<Integer, Integer, Long>> {
 
         private IngestionTimeWatermarkStrategy() {}
 
@@ -356,13 +353,13 @@ public class IntervalJoinBench {
         }
 
         @Override
-        public WatermarkGenerator<SourceEvent> createWatermarkGenerator(
+        public WatermarkGenerator<Tuple3<Integer, Integer, Long>> createWatermarkGenerator(
                 WatermarkGeneratorSupplier.Context context) {
             return new AscendingTimestampsWatermarks<>();
         }
 
         @Override
-        public TimestampAssigner<SourceEvent> createTimestampAssigner(
+        public TimestampAssigner<Tuple3<Integer, Integer, Long>> createTimestampAssigner(
                 TimestampAssignerSupplier.Context context) {
             return (event, timestamp) -> timestamp;
         }

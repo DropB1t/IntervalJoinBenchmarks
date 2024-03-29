@@ -26,14 +26,14 @@ package join.sources;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import join.SourceEvent;
 import util.ThroughputCounter;
 
-public class DistributionSource extends RichParallelSourceFunction<SourceEvent> {
+public class DistributionSource extends RichParallelSourceFunction<Tuple3<Integer, Integer, Long>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DistributionSource.class);
     
@@ -71,19 +71,15 @@ public class DistributionSource extends RichParallelSourceFunction<SourceEvent> 
     }
 
     @Override
-    public void run(final SourceContext<SourceEvent> ctx) throws Exception {
+    public void run(final SourceContext<Tuple3<Integer, Integer, Long>> ctx) throws Exception {
         this.t_start = System.nanoTime();
         // generation loop
         while ((System.nanoTime() - this.t_start < runtime) && running) {
-            SourceEvent tuple = new SourceEvent();
+            Tuple3<Integer, Integer, Long> tuple = new Tuple3<Integer, Integer, Long>();
             tuple.f0 = keyDistribution.sample();
             tuple.f1 = VALUE;
             tuple.f2 = System.nanoTime();
             ctx.collectWithTimestamp(tuple, ts);
-            /*
-            if (generated < 15)
-                LOG.info("  * key-> " + tuple.f0 + ", ts-> " + ts);
-            */
             generated++;
             
             if (gen_rate != 0) { // not full speed

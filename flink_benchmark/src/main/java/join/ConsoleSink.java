@@ -27,6 +27,7 @@ import util.Log;
 import util.Sampler;
 import util.MetricGroup;
 import org.slf4j.Logger;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 
@@ -36,7 +37,7 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
  *  
  *  Sink node that receives and prints the results.
  */ 
-public class ConsoleSink extends RichSinkFunction<SourceEvent> {
+public class ConsoleSink extends RichSinkFunction<Tuple3<Integer, Integer, Long>> {
 
     private static final Logger LOG = Log.get(ConsoleSink.class);
     private long processed;
@@ -58,7 +59,7 @@ public class ConsoleSink extends RichSinkFunction<SourceEvent> {
     }
 
     @Override
-    public void invoke(SourceEvent input, Context context) throws Exception {
+    public void invoke(Tuple3<Integer, Integer, Long> input, Context context) throws Exception {
         //int key = input.f0;
         //int value = input.f1;
         long timestamp = input.f2;

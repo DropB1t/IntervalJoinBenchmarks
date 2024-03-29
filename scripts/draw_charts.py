@@ -32,11 +32,10 @@ elif(args.mode == 'fl'):
 
 def draw_latency_chart(tests_path):
     folders = sorted([folder for folder in os.listdir(tests_path) if os.path.isdir(os.path.join(tests_path, folder))])
-
     y = []
     y_line_points = []
-    x_line_points = [1 ,2, 3, 4, 5, 6]
-    x_labels = ['1', '2', '4', '8', '16', '32']  # Set the x-axis labels
+    x = [1 ,2, 3, 4, 5, 6, 7, 8, 9, 10]
+    x_labels = ['1', '2', '3', '4', '5', '6', '7', '8', '16', '32']  # Set the x-axis labels
     fig, ax = plt.subplots()
 
     for folder in folders:
@@ -47,13 +46,16 @@ def draw_latency_chart(tests_path):
             data = json.load(file)
 
             #Dividing by 1000 to convert from us to ms
-            lower_whiskers = ([entry['0']/1000 for entry in data])
-            _5th_percentile = ([entry['5']/1000 for entry in data])
-            lower_quartile = ([entry['25']/1000 for entry in data])
-            _50th_percentile = ([entry['50']/1000 for entry in data])
-            upper_quartile = ([entry['75']/1000 for entry in data])
-            _95th_percentile = ([entry['95']/1000 for entry in data])
-            upper_whiskers = ([entry['100']/1000 for entry in data])
+            lower_whiskers = sorted([entry['0']/1000 for entry in data])
+            _5th_percentile = sorted([entry['5']/1000 for entry in data])
+            lower_quartile = sorted([entry['25']/1000 for entry in data])
+            _50th_percentile = sorted([entry['50']/1000 for entry in data])
+            upper_quartile = sorted([entry['75']/1000 for entry in data])
+            _95th_percentile = sorted([entry['95']/1000 for entry in data])
+            upper_whiskers = sorted([entry['100']/1000 for entry in data])
+
+            print(folder)
+            print(upper_whiskers)
             
             #means = ([entry['mean'] for entry in data])
             #y_line_points.append(means)
@@ -67,7 +69,7 @@ def draw_latency_chart(tests_path):
                        meanprops=dict(color=error_color, linewidth=1.4, linestyle='-'))
     
     y_line_points = [item.get_ydata()[0] for item in boxes['means']]
-    ax.plot(x_line_points, y_line_points, marker="o", markersize=4, color=error_color, ls='--', lw=1.4)
+    ax.plot(x, y_line_points, marker="o", markersize=4, color=error_color, ls='--', lw=1.4)
 
     ax.grid(True, axis="y", ls='--', lw=1, alpha=.8)
     ax.set_axisbelow(True)
@@ -88,8 +90,8 @@ def draw_throughput_chart(tests_path):
 
     y = [] 
     errors = []
-    x = [1,2,3,4,5,6]
-    x_labels = ['1', '2', '4', '8', '16', '32']  # Set the x-axis labels
+    x = [1 ,2, 3, 4, 5, 6, 7, 8, 9, 10]
+    x_labels = ['1', '2', '3', '4', '5', '6', '7', '8', '16', '32']  # Set the x-axis labels
     fig, ax = plt.subplots()
 
     for folder in folders:

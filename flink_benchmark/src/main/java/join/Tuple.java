@@ -23,25 +23,39 @@
 
 package join;
 
-public class Tuple {
+import java.io.Serializable;
+
+public class Tuple implements Serializable {
 	public int key;
 	public int value;
-	public long ts;
+	public long ts_off;
 
 	public Tuple() {
 		key = -1;
 		value = 0;
-		ts = 0L;
+		ts_off = 0L;
 	}
 
-	public Tuple(int _key, int _val, long _ts) {
+	public Tuple(int _key, int _val, long _ts_off) {
 		key = _key;
 		value = _val;
-		ts = _ts;
+		ts_off = _ts_off;
+	}
+
+	public Tuple(int _key, long _ts_off) {
+		key = _key;
+		value = 5;
+		ts_off = _ts_off;
+	}
+
+	public Tuple(int _key, int _val) {
+		key = _key;
+		value = _val;
+		ts_off = 0L;
 	}
 
 	@Override
 	public String toString() {
-		return key + " - " + value + " - " + ts;
+		return key + " | " + value;
 	}
 }
