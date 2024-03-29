@@ -31,7 +31,7 @@ elif(args.mode == 'fl'):
 #print(cset._fields)
 
 def draw_latency_chart(tests_path):
-    folders = sorted([folder for folder in os.listdir(tests_path) if os.path.isdir(os.path.join(tests_path, folder))])
+    folders = sorted([folder for folder in os.listdir(tests_path) if os.path.isdir(os.path.join(tests_path, folder))], key=lambda x: int(x.split('_')[1].split('_')[0]))
     y = []
     y_line_points = []
     x = [1 ,2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -86,7 +86,7 @@ def draw_latency_chart(tests_path):
     #fig.savefig(os.path.join(tests_path, 'latency.png'), dpi=100)
 
 def draw_throughput_chart(tests_path):
-    folders = sorted([folder for folder in os.listdir(tests_path) if os.path.isdir(os.path.join(tests_path, folder))])
+    folders = sorted([folder for folder in os.listdir(tests_path) if os.path.isdir(os.path.join(tests_path, folder))], key=lambda x: int(x.split('_')[1].split('_')[0]))
 
     y = [] 
     errors = []
