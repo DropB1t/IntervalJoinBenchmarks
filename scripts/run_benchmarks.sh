@@ -73,7 +73,7 @@ batch_size=( 0 16 32 )
 lower_bounds=( -500 -2500 )
 upper_bounds=( 500 2500 )
 
-exec_mode=( k )
+exec_mode=( k d )
 real_type=( rd sd )
 
 synt_type=( su sz )
