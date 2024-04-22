@@ -179,7 +179,7 @@ public class IntervalJoinBench {
         // Set up the streaming execution Environment
         Configuration flink_config = new Configuration();
         flink_config.set(TaskManagerOptions.TOTAL_FLINK_MEMORY, MemorySize.ofMebiBytes(5120));
-        //flink_config.set(TaskManagerOptions.NUM_TASK_SLOTS, 8);
+        flink_config.set(TaskManagerOptions.NUM_TASK_SLOTS, 64);
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(flink_config);
         env.getConfig().disableGenericTypes();
        
