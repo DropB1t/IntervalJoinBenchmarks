@@ -26,7 +26,7 @@ GEN_DIR="$MAIN_DIR/gen_dataset"
 WF_BENCH_DIR="$MAIN_DIR/windflow_benchmark"
 FL_BENCH_DIR="$MAIN_DIR/flink_benchmark"
 
-num_runs=5
+num_runs=3
 res_dir="$MAIN_DIR/results"
 
 options='r:d:'
@@ -80,10 +80,12 @@ synt_type=( su sz )
 zipfian_skews=( 0.0 0.6 0.9 )
 
 main() {
+    echo "Compiling all projects..."
+    compile_all
     echo "${num_runs} runs will be executed for each benchmark."
     echo "Running benchmarks..."
-    wf_run_synthetic_benchmarks
-    wf_run_real_benchmarks
+    #wf_run_synthetic_benchmarks
+    #wf_run_real_benchmarks
     fl_run_synthetic_benchmarks
     fl_run_real_benchmarks
     echo "Done"
@@ -283,6 +285,18 @@ gen_dataset() {
     else
         ./bin/gen --num_key "$key" --type "$type" --zipf "$zipfian_skewness"
     fi
+    cd - || exit
+}
+
+compile_all() {
+    cd $FL_BENCH_DIR || exit
+    mvn clean package
+    cd - || exit
+    cd $WF_BENCH_DIR || exit
+    make
+    cd - || exit
+    cd $GEN_DIR || exit
+    make
     cd - || exit
 }
 
