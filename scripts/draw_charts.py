@@ -13,7 +13,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Draw latency or throughput chart.')
     parser.add_argument('tests_path', type=str, help='Path to the tests folders')
     parser.add_argument('mode', type=str, choices=['wf', 'fl'], help='Benchmark: "windflow" or "flink"')
-    parser.add_argument('chart_type', type=str, choices=['lt', 'th'], help='Type of chart: "latency" or "throughput"')
+    parser.add_argument('chart_type', type=str, choices=['lt', 'th', 'all'], help='Type of chart: "latency", "throughput", or "all"')
     return parser.parse_args()
 
 args = parse_arguments()
@@ -89,7 +89,7 @@ def draw_latency_chart(tests_path):
     plt.ylabel('Latency (ms)')
     #plt.show()
 
-    fig.savefig(os.path.join(tests_path, 'latency1.svg'), dpi=100)
+    fig.savefig(os.path.join(tests_path, 'latency.svg'), dpi=100)
     #fig.savefig(os.path.join(tests_path, 'latency.png'), dpi=100)
 
 def draw_throughput_chart(tests_path):
@@ -124,7 +124,12 @@ def draw_throughput_chart(tests_path):
     fig.savefig(os.path.join(tests_path, 'throughput.svg'), dpi=100)
     #fig.savefig(os.path.join(tests_path, 'throughput.png'), dpi=100)
 
-if(args.chart_type == 'th'):
-    draw_throughput_chart(args.tests_path)
-elif(args.chart_type == 'lt'):
-    draw_latency_chart(args.tests_path)
+def draw_charts(args):
+    switch = {
+        'th': draw_throughput_chart,
+        'lt': draw_latency_chart,
+        'all': lambda tests_path: (draw_throughput_chart(tests_path), draw_latency_chart(tests_path))
+    }
+    switch[args.chart_type](args.tests_path)
+
+draw_charts(args)

@@ -34,7 +34,7 @@ typedef enum
     ZIPF_SYNTHETIC
 } gen_types;
 
-const size_t default_data_size = 200000;
+const size_t default_data_size = 2000000;
 
 const char separator = '|';
 
