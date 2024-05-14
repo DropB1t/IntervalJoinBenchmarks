@@ -29,7 +29,7 @@
 #include<string>
 #include<vector>
 #include<getopt.h>
-#include "constants.hpp"
+#include "props.hpp"
 
 using namespace std;
 
