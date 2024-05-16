@@ -87,10 +87,10 @@ main() {
         echo "Compiling..."
         compile_all
     fi
-    #wf_run_synthetic_benchmarks
-    #wf_run_real_benchmarks
     fl_run_synthetic_benchmarks
     fl_run_real_benchmarks
+    wf_run_synthetic_benchmarks
+    wf_run_real_benchmarks
     echo "Done!"
 }
 
@@ -102,36 +102,39 @@ wf_run_synthetic_benchmarks() {
         #else
         #    local boundir="5s"
         #fi
-        for mode in "${exec_mode[@]}"; do 
-            if [ "$mode" == "k" ]; then
-                local mp="kp"
+        for skewness in "${zipfian_skews[@]}"; do
+            if [ "$skewness" == "0.0" ]; then
+                local type="${synt_type[0]}"
             else
-                local mp="dp"
+                local type="${synt_type[1]}"
             fi
-            for batch in "${batch_size[@]}"; do
-                for skewness in "${zipfian_skews[@]}"; do
-                    if [ "$skewness" == "0.0" ]; then
-                        local type="${synt_type[0]}"
+            for mode in "${exec_mode[@]}"; do 
+                if [ "$mode" == "k" ]; then
+                    local mp="kp"
+                else
+                    local mp="dp"
+                fi
+                for key in "${num_key[@]}"; do
+                    if [ "$key" = 10000 ]; then
+                        local keydir="10k_keys"
+                    elif [ "$key" = 1000 ]; then
+                        local keydir="1k_keys"
                     else
-                        local type="${synt_type[1]}"
+                        local keydir="${key}_keys"
                     fi
-                    for key in "${num_key[@]}"; do
-                        if [ "$key" = 100 ]; then
-                            local keydir="100_keys"
-                        elif [ "$key" = 1000 ]; then
-                            local keydir="1k_keys"
-                        else
-                            local keydir="10k_keys"
-                        fi
-                        gen_dataset "$key" "$type" "$skewness"
+                    gen_dataset "$key" "$type" "$skewness"
+                    for batch in "${batch_size[@]}"; do
                         for s_deg in "${source_degrees[@]}"; do
                             local i=1
                             for p_deg in "${parallelism[@]}"; do
                                 if [ "$type" == "su" ]; then
-                                    local test_dir="$res_dir/wf/${type}/${mp}/${batch}_batch/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                                    local test_dir="$res_dir/wf/${type}/${mp}/${keydir}/${batch}_batch/source_${s_deg}/$((i++))_test_${p_deg}"
                                 else
-                                    local test_dir="$res_dir/wf/${type}_${skewness}/${mp}/${batch}_batch/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                                    local test_dir="$res_dir/wf/${type}_${skewness}/${mp}/${keydir}/${batch}_batch/source_${s_deg}/$((i++))_test_${p_deg}"
                                 fi
+                                batch_path="${test_dir%/*_batch*}"
+                                python3 $SCRIPT_DIR/draw_charts.py "$batch_path" wf batch
+                                exit 0
                                 mkdir -p "$test_dir"
                                 rm -f "$test_dir"/*
                                 for run in $(seq 1 "$num_runs"); do
@@ -139,10 +142,15 @@ wf_run_synthetic_benchmarks() {
                                     sed -i '22,28d' "$test_dir/run_${run}.log"
                                 done
                             done
-                            chart_path="${test_dir%/*}/"
+                            chart_path="${test_dir%/*}"
                             python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf all
                         done
+                        # Average latency per source degree and parallelism
+                        src_path="${chart_path%/*}"
+                        python3 $SCRIPT_DIR/draw_charts.py "$src_path" wf avg
                     done
+                    batch_path="${test_dir%/*_batch*}"
+                    python3 $SCRIPT_DIR/draw_charts.py "$batch_path" wf batch
                 done
             done
         done
@@ -153,22 +161,18 @@ wf_run_synthetic_benchmarks() {
 wf_run_real_benchmarks() {
     cd $WF_BENCH_DIR || exit
     for bound_idx in "${!lower_bounds[@]}"; do
-        for mode in "${exec_mode[@]}"; do
-            if [ "$mode" == "k" ]; then
-                local mp="kp"
-            else
-                local mp="dp"
-            fi
-            for batch in "${batch_size[@]}"; do
-                for type in "${real_type[@]}"; do
+        for type in "${real_type[@]}"; do
+            for mode in "${exec_mode[@]}"; do
+                if [ "$mode" == "k" ]; then
+                    local mp="kp"
+                else
+                    local mp="dp"
+                fi
+                for batch in "${batch_size[@]}"; do
                     for s_deg in "${source_degrees[@]}"; do
                         local i=1
                         for p_deg in "${parallelism[@]}"; do
-                            if [ "$type" == "rd" ]; then
-                                local test_dir="$res_dir/wf/${type}/${mp}/${batch}_batch/source_${s_deg}/test_$((i++))_${p_deg}p"
-                            else
-                                local test_dir="$res_dir/wf/${type}/${mp}/${batch}_batch/source_${s_deg}/test_$((i++))_${p_deg}p"
-                            fi
+                            local test_dir="$res_dir/wf/${type}/${mp}/${batch}_batch/source_${s_deg}/$((i++))_test_${p_deg}"
                             mkdir -p "$test_dir"
                             rm -f "$test_dir"/*
                             for run in $(seq 1 "$num_runs"); do
@@ -176,10 +180,15 @@ wf_run_real_benchmarks() {
                                 sed -i '22,28d' "$test_dir/run_${run}.log"
                             done
                         done
-                        chart_path="${test_dir%/*}/"
+                        chart_path="${test_dir%/*}"
                         python3 $SCRIPT_DIR/draw_charts.py "$chart_path" wf all
                     done
+                    # Average latency per source degree and parallelism
+                    src_path="${chart_path%/*}"
+                    python3 $SCRIPT_DIR/draw_charts.py "$src_path" wf avg
                 done
+                batch_path="${test_dir%/*_batch*}"
+                python3 $SCRIPT_DIR/draw_charts.py "$batch_path" wf batch
             done
         done
     done
@@ -198,21 +207,21 @@ fl_run_synthetic_benchmarks() {
                     local type="${synt_type[1]}"
                 fi
             for key in "${num_key[@]}"; do
-                if [ "$key" = 100 ]; then
-                    local keydir="100_keys"
+                if [ "$key" = 10000 ]; then
+                    local keydir="10k_keys"
                 elif [ "$key" = 1000 ]; then
                     local keydir="1k_keys"
                 else
-                    local keydir="10k_keys"
+                    local keydir="${key}_keys"
                 fi
                 gen_dataset "$key" "$type" "$skewness"
                 for s_deg in "${source_degrees[@]}"; do
                     local i=1
                     for p_deg in "${parallelism[@]}"; do
                         if [ "$type" == "su" ]; then
-                            local test_dir="$res_dir/fl/${type}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                            local test_dir="$res_dir/fl/${type}/${keydir}/source_${s_deg}/$((i++))_test_${p_deg}"
                         else
-                            local test_dir="$res_dir/fl/${type}_${skewness}/${keydir}/source_${s_deg}/test_$((i++))_${p_deg}p"
+                            local test_dir="$res_dir/fl/${type}_${skewness}/${keydir}/source_${s_deg}/$((i++))_test_${p_deg}"
                         fi
                         mkdir -p "$test_dir"
                         rm -f "$test_dir"/*
@@ -224,9 +233,13 @@ fl_run_synthetic_benchmarks() {
                         cp -f throughput.json "$test_dir"
                         rm -f throughput.json
                     done
-                    chart_path="${test_dir%/*}/"
+                    chart_path="${test_dir%/*}"
                     python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl all
                 done
+                # Average latency per source degree and parallelism
+                src_path="${chart_path%/*}"
+                echo "$src_path"
+                python3 $SCRIPT_DIR/draw_charts.py "$src_path" wf avg
             done
         done
     done
@@ -242,11 +255,7 @@ fl_run_real_benchmarks() {
             for s_deg in "${source_degrees[@]}"; do
                 local i=1
                 for p_deg in "${parallelism[@]}"; do
-                    if [ "$type" == "rd" ]; then
-                        local test_dir="$res_dir/fl/${type}/source_${s_deg}/test_$((i++))_${p_deg}p"
-                    else
-                        local test_dir="$res_dir/fl/${type}/source_${s_deg}/test_$((i++))_${p_deg}p"
-                    fi
+                    local test_dir="$res_dir/fl/${type}/source_${s_deg}/$((i++))_test_${p_deg}"
                     mkdir -p "$test_dir"
                     rm -f "$test_dir"/*
                     for run in $(seq 1 "$num_runs"); do
@@ -257,9 +266,13 @@ fl_run_real_benchmarks() {
                     cp -f throughput.json "$test_dir"
                     rm -f throughput.json
                 done
-                chart_path="${test_dir%/*}/"
+                chart_path="${test_dir%/*}"
                 python3 $SCRIPT_DIR/draw_charts.py "$chart_path" fl all
             done
+            # Average latency per source degree and parallelism
+            src_path="${chart_path%/*}"
+            echo "$src_path"
+            python3 $SCRIPT_DIR/draw_charts.py "$src_path" wf avg
         done
     done
     cd - || exit
