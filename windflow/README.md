@@ -26,10 +26,10 @@ make all
 - **sd** = stock dataset
 
 ### Parallelism Modes
-- **Key based Parallelism**
-- **Data based Parallelism** ( with single buffer per stream, per replica )
+- **Key Partitioning**
+- **Data Partitioning** ( with single buffer per stream, per replica )
 
-> In case of Data based Parallelism if you want to      perform buffer size measurements add the `-DWF_JOIN_STATS` flag to `MARCO` variable in `src/Makefile`
+> In case of Data Partitioning if you want to      perform buffer size measurements add the `-DWF_JOIN_STATS` flag to `MARCO` variable in `src/Makefile`
 
 ## Example
 ``./bin/ij --rate 0 --sampling 100 --batch 0 --parallelism 1,1,1,1 --type su --mode k -l -500 -u 500 [--chaining] ``
