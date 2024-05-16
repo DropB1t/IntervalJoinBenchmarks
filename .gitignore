@@ -8,6 +8,8 @@ ij
 gen
 
 *.json
+*.svg
+*.png
 
 # Java
 

@@ -71,7 +71,7 @@ public class Metric implements Serializable {
         objectNode.put("50", descriptiveStatistics.getPercentile(50));
         objectNode.put("75", descriptiveStatistics.getPercentile(75));
         objectNode.put("95", descriptiveStatistics.getPercentile(95));
-        objectNode.put("100", descriptiveStatistics.getPercentile(100));
+        objectNode.put("100", descriptiveStatistics.getMax());
         
         Util.appendJson((JsonNode)objectNode, fileName);
     }

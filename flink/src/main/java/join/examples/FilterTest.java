@@ -26,20 +26,19 @@ package join.examples;
 import util.Log;
 import org.slf4j.Logger;
 
-import join.Tuple;
-
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.api.common.functions.RichFilterFunction;
+import org.apache.flink.api.java.tuple.Tuple3;
 
 // class Filter
-public class FilterTest extends RichFilterFunction<Tuple> {
+public class FilterTest extends RichFilterFunction<Tuple3<Integer, Integer, Long>> {
     private static final Logger LOG = Log.get(FilterTest.class);
     private long t_start;
     private long t_end;
     private long processed;
 
     // constructor
-    FilterTest() {}
+    public FilterTest() {}
 
     // open method
     @Override
@@ -50,11 +49,11 @@ public class FilterTest extends RichFilterFunction<Tuple> {
 
     // flatmap method
     @Override
-    public boolean filter(Tuple input) {
-        int value = input.value;
+    public boolean filter(Tuple3<Integer, Integer, Long> input) {
+        int value = input.f1;
         t_end = System.nanoTime();
         processed++;
-        if (value > 5) {
+        if (value >= 5) {
             return true;
         }
         else {
