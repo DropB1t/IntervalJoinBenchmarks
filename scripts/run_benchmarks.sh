@@ -132,9 +132,6 @@ wf_run_synthetic_benchmarks() {
                                 else
                                     local test_dir="$res_dir/wf/${type}_${skewness}/${mp}/${keydir}/${batch}_batch/source_${s_deg}/$((i++))_test_${p_deg}"
                                 fi
-                                batch_path="${test_dir%/*_batch*}"
-                                python3 $SCRIPT_DIR/draw_charts.py "$batch_path" wf batch
-                                exit 0
                                 mkdir -p "$test_dir"
                                 rm -f "$test_dir"/*
                                 for run in $(seq 1 "$num_runs"); do
