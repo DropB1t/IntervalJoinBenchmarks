@@ -50,11 +50,7 @@ then
    helpFunction
 fi
 
-if [ ! -d "$MAIN_DIR/datasets" ]; then
-    wget -q -O "$MAIN_DIR/datasets.tar.gz" "https://www.dropbox.com/scl/fi/y4qkcvci7yqcypg41tu85/datasets.tar.gz?rlkey=6o2d4byhx95d860pojddka4iq&dl=0"
-    tar -zvxf datasets.tar.gz
-    rm datasets.tar.gz
-fi
+( "$SCRIPT_DIR/download_datasets.sh" )
 
 if command -v pip &> /dev/null; then
     cd $SCRIPT_DIR || exit

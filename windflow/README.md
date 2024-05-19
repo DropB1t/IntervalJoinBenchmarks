@@ -1,4 +1,4 @@
-# Compile and run IntervalJoinBenchmark
+# Compile and run IntervalJoinBench
 
 ## Compile
 make all
