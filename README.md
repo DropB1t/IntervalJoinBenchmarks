@@ -19,8 +19,47 @@ In order to run the Flink implementation in this project, the following dependen
 * [Java JDK](https://openjdk.java.net/install/) version >= 1.11
 * [Maven](https://maven.apache.org/install.html) version >= 3.9.6
 
+## Run Benchmark script
+You can generate whole test cases simply by runnig the `run_benchmarks.sh` located in `/scripts` folder. The provided script cycles through all parameters at lines [`64:78`](https://github.com/DropB1t/IntervalJoinBenchmarks/blob/main/scripts/run_benchmarks.sh#L64-L78) and generates *throughput* and *latency* charts by running `draw_charts.py` python tool.
+
+In order to install the `draw_charts.py` dependencies you need to have on your system [**pip**](https://github.com/pypa/pip): the package installer for Python.
+After that simply run the following command inside the `/scripts` folder:
+
+```
+pip install -r requirements.txt
+```
+
+### Results folder structure example
+```
+.
+└── results/
+    └── {benchmark_suite}/
+        └── {dataset_type}/
+            └── [{partitiong_mode}]/
+                └── [{synthetic_keys_number}]/
+                    └── [{batching_size}]/
+                        ├── {source_degree}/
+                        │   ├── {1_test_1}/
+                        │   │   ├── ...
+                        │   │   ├── latency.svg
+                        │   │   └── throughput.svg
+                        │   ├── {2_test_2}
+                        │   ├── {3_test_4}
+                        │   ├── {4_test_6}
+                        │   └── source.svg
+                        └── [batch.svg]
+```
+
+
 ## Synthetic Datesets
-In order to generate the synthetic datasets you can compile and run the C++ tool located in `gen_dataset` folder. Further instructions for using the tool can be found in the inner [README](https://github.com/DropB1t/IntervalJoinBenchmarks/tree/main/gen_dataset) file.
+In order to generate the synthetic datasets you can compile and run the C++ tool located in `/gen_dataset` folder. Further instructions for using the tool can be found in the inner [README](https://github.com/DropB1t/IntervalJoinBenchmarks/tree/main/gen_dataset) file.
 
 ## Real World Datasets
 In order to run a benchmark, of each implementaion, with real datasets you need to download the [datasets.tar.gz](https://www.dropbox.com/scl/fi/y4qkcvci7yqcypg41tu85/datasets.tar.gz?rlkey=6o2d4byhx95d860pojddka4iq&dl=0) archive and unzip it by calling `tar -zvxf datasets.tar.gz` command into root of this repository. Otherwise you can run the `./download_datasets.sh` script located in `/scripts` folder.
+
+Credits for datasets go to [AllianceDB](https://github.com/intellistream/AllianceDB/blob/master/docs/README.md) project.
+
+## Latency & Throughput Chart Example
+![Latency Chart Example](./imgs/latency.svg)
+![Throughput Chart Example](./imgs/throughput.svg)
+

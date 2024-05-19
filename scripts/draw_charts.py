@@ -180,15 +180,15 @@ def draw_avgmetrics_per_source(sources_path):
 
     fig.set_dpi(100)
     fig.set_size_inches(18, 10, forward=True)
-    fig.savefig(os.path.join(sources_path, 'avg.svg'))
-    #fig.savefig(os.path.join(sources_path, 'avg.png'))
+    fig.savefig(os.path.join(sources_path, 'source.svg'))
+    #fig.savefig(os.path.join(sources_path, 'source.png'))
 
     th.legend()
     th_extent = th.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(sources_path, 'avg_throughput.svg'), bbox_inches=th_extent.expanded(1.1, 1.2))
+    fig.savefig(os.path.join(sources_path, 'source_throughput.svg'), bbox_inches=th_extent.expanded(1.1, 1.2))
 
     lt_extent = lt.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(sources_path, 'avg_latency.svg'), bbox_inches=lt_extent.expanded(1.1, 1.2))
+    fig.savefig(os.path.join(sources_path, 'source_latency.svg'), bbox_inches=lt_extent.expanded(1.1, 1.2))
 
 def draw_avgmetrics_per_batch(batch_path):
     # Get the list of batch folders, sorted
