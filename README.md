@@ -60,6 +60,6 @@ In order to run a benchmark, of each implementaion, with real datasets you need 
 Credits for datasets go to [AllianceDB](https://github.com/intellistream/AllianceDB/blob/master/docs/README.md) project.
 
 ## Latency & Throughput Chart Example
-![Latency Chart Example](./imgs/latency.svg)
-![Throughput Chart Example](./imgs/throughput.svg)
+![Latency Chart Example](./imgs/latency_example.svg)
+![Throughput Chart Example](./imgs/throughput_example.svg)
 
