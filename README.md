@@ -20,7 +20,7 @@ In order to run the Flink implementation in this project, the following dependen
 * [Maven](https://maven.apache.org/install.html) version >= 3.9.6
 
 ## Run Benchmark script
-You can generate whole test cases simply by runnig the `run_benchmarks.sh` located in `/scripts` folder. The provided script cycles through all parameters at lines [`64:78`](https://github.com/DropB1t/IntervalJoinBenchmarks/blob/main/scripts/run_benchmarks.sh#L64-L78) and generates *throughput* and *latency* charts by running `draw_charts.py` python tool.
+You can generate whole test cases simply by runnig the `run_benchmarks.sh` located in `/scripts` folder. The provided script cycles through all parameters specified in the [config](./scripts/config) file and generates *throughput* and *latency* charts by running `draw_charts.py` python tool.
 
 In order to install the `draw_charts.py` dependencies you need to have on your system [**pip**](https://github.com/pypa/pip): the package installer for Python.
 After that simply run the following command inside the `/scripts` folder:
