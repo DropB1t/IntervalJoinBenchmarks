@@ -7,9 +7,8 @@ results
 ij
 gen
 
-*.json
-*.svg
-*.png
+windflow/*.json
+flink/*.json
 
 # Java
 
