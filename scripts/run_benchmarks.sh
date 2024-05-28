@@ -110,6 +110,7 @@ wf_run_synthetic_benchmarks() {
                             local i=1
                             for p_deg in "${parallelism[@]}"; do
                                 if [ "$type" == "su" ]; then
+                                    # Add ../wf/${boundir}/${type}/.. to the path if you want to discriminate between interval boundaries
                                     local test_dir="$res_dir/wf/${type}/${mp}/${keydir}/${batch}_batch/source_${s_deg}/$((i++))_test_${p_deg}"
                                 else
                                     local test_dir="$res_dir/wf/${type}_${skewness}/${mp}/${keydir}/${batch}_batch/source_${s_deg}/$((i++))_test_${p_deg}"

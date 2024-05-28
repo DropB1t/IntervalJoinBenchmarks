@@ -123,6 +123,7 @@ def draw_avgmetrics_per_source(sources_path):
     # Initialize the figure and axis for the plot
     fig, (lt, th) = plt.subplots(2, 1)
     # Define the colors for the lines
+    rates = sorted([int(folder.split('_')[1]) for folder in sources_folders])
     colors = ['b', 'g', 'y', 'r']
 
     # Iterate over the source folders
@@ -153,8 +154,8 @@ def draw_avgmetrics_per_source(sources_path):
             y_th.append(mean_throughput)
 
         # Plot the line for this source folder
-        lt.plot(y_lt, color=colors[i % len(colors)], label="source = " + str(i+1), marker="x", markersize=5, ls='-', lw=1.4)
-        th.plot(y_th, color=colors[i % len(colors)], label="source = " + str(i+1), marker="x", markersize=5, ls='-', lw=1.4)
+        lt.plot(y_lt, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=5, ls='-', lw=1.4)
+        th.plot(y_th, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=5, ls='-', lw=1.4)
 
     _, max_y = lt.get_ylim()
     tick_interval = round(max_y / 15)
