@@ -74,8 +74,8 @@ int main(int argc, char *argv[])
     size_t data_size = 0;
     size_t num_keys = 0;
 
-    if (argc == 5 || argc == 7) {
-        while ((option = getopt_long(argc, argv, "k:s:t:", long_opts, &index)) != -1) {
+    if (argc == 5 || argc == 7 || argc == 9) {
+        while ((option = getopt_long(argc, argv, "k:s:z:t:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'k': {
                     num_keys = atoi(optarg);
