@@ -13,7 +13,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Draw latency or throughput chart.')
     parser.add_argument('tests_path', type=str, help='Path to the tests folders')
     parser.add_argument('mode', type=str, choices=['wf', 'fl'], help='Benchmark: "windflow" or "flink"')
-    parser.add_argument('chart_type', type=str, choices=['lt', 'th', 'batch', 'avg', 'all'], help='Chart type: "lt" for latency, "th" for throughput, "avg" for average latency, "all" for both, "batch" for average performence per batch')
+    parser.add_argument('chart_type', type=str, choices=['lt', 'th', 'batch', 'src', 'all'], help='Chart type: "lt" for latency, "th" for throughput, "src" for average performence per source, "all" for both, "batch" for average performence per batch')
     return parser.parse_args()
 
 args = parse_arguments()
@@ -154,8 +154,8 @@ def draw_avgmetrics_per_source(sources_path):
             y_th.append(mean_throughput)
 
         # Plot the line for this source folder
-        lt.plot(y_lt, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=5, ls='-', lw=1.4)
-        th.plot(y_th, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=5, ls='-', lw=1.4)
+        lt.plot(y_lt, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=9, ls='-', lw=2)
+        th.plot(y_th, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=9, ls='-', lw=2)
 
     _, max_y = lt.get_ylim()
     tick_interval = round(max_y / 15)
@@ -180,8 +180,8 @@ def draw_avgmetrics_per_source(sources_path):
     lt.legend()
 
     fig.set_dpi(100)
-    fig.set_size_inches(18, 10, forward=True)
-    fig.savefig(os.path.join(sources_path, 'source.svg'))
+    fig.set_size_inches(14, 10, forward=True)
+    fig.savefig(os.path.join(sources_path, 'source.svg'), bbox_inches='tight', pad_inches=0.2)
     #fig.savefig(os.path.join(sources_path, 'source.png'))
 
     th.legend()
@@ -230,8 +230,8 @@ def draw_avgmetrics_per_batch(batch_path):
             y_th.append(mean_throughput)
 
         # Plot the lines per batch size per metric
-        lt.plot(y_lt, color=colors[i % len(colors)], label="batch = " + str(batches[i % len(batches)]), marker="x", markersize=5, ls='-', lw=1.4)
-        th.plot(y_th, color=colors[i % len(colors)], label="batch = " + str(batches[i % len(batches)]), marker="x", markersize=5, ls='-', lw=1.4)
+        lt.plot(y_lt, color=colors[i % len(colors)], label="batch = " + str(batches[i % len(batches)]), marker="x", markersize=9, ls='-', lw=2)
+        th.plot(y_th, color=colors[i % len(colors)], label="batch = " + str(batches[i % len(batches)]), marker="x", markersize=9, ls='-', lw=2)
 
     _, max_y = lt.get_ylim()
     tick_interval = round(max_y / 15)
@@ -253,8 +253,8 @@ def draw_avgmetrics_per_batch(batch_path):
     lt.legend()
 
     fig.set_dpi(100)
-    fig.set_size_inches(18, 10, forward=True)
-    fig.savefig(os.path.join(batch_path, 'batch.svg'))
+    fig.set_size_inches(14, 10, forward=True)
+    fig.savefig(os.path.join(batch_path, 'batch.svg'), bbox_inches='tight', pad_inches=0.2)
     #fig.savefig(os.path.join(sources_path, 'batch.png'))
 
     th.legend()
@@ -268,7 +268,7 @@ def draw_charts(args):
     switch = {
         'th': draw_throughput_chart,
         'lt': draw_latency_chart,
-        'avg': draw_avgmetrics_per_source,
+        'src': draw_avgmetrics_per_source,
         'batch': draw_avgmetrics_per_batch,
         'all': lambda tests_path: (draw_throughput_chart(tests_path), draw_latency_chart(tests_path))
     }
