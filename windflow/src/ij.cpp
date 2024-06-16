@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
     
     //cout << "Dumping metrics" << endl;
     util::metric_group.dump_all();
-    #ifdef COLLECT_TEST_DATA
+    #ifdef METRICS_COLLECTION
         rapidjson::Document doc;
         doc.SetInt(throughput);
         dump_test_results(doc, (outdir +"throughput.json"));

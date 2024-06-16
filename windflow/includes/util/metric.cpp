@@ -56,13 +56,13 @@ void Metric::total(long total)
 
 /**
  * Dumps the metric data to a JSON file.
- * If COLLECT_TEST_DATA is defined, the metric data is dumped to a file with a specific name in the specified output directory.
+ * If METRICS_COLLECTION is defined, the metric data is dumped to a file with a specific name in the specified output directory.
  * Otherwise, the metric data is dumped to a file with a generic name.
  */
 void Metric::dump()
 {
     Document doc = get_json();
-#ifdef COLLECT_TEST_DATA
+#ifdef METRICS_COLLECTION
     dump_test_results(doc, outdir + name_ + ".json");
 #else
     string filename = "metric_" + name_ + ".json";
