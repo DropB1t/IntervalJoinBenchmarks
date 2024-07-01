@@ -1,3 +1,4 @@
+from ast import parse
 import os
 import json
 import argparse
@@ -8,13 +9,26 @@ import numpy as np
 
 from tol_colors import tol_cset
 
-# (Absolute) path example '{REPO_DIR}/results/wf/synthetic_1s/k_mode/0_batch_su/100_keys/'
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Draw latency or throughput chart.')
-    parser.add_argument('tests_path', type=str, help='Path to the tests folders')
-    parser.add_argument('mode', type=str, choices=['wf', 'fl'], help='Benchmark: "windflow" or "flink"')
-    parser.add_argument('chart_type', type=str, choices=['lt', 'th', 'batch', 'src', 'all'], help='Chart type: "lt" for latency, "th" for throughput, "src" for average performence per source, "all" for both, "batch" for average performence per batch')
-    return parser.parse_args()
+    parser.add_argument('mode', type=str, choices=['wf', 'fl', 'comparison'], help='Benchmark: "windflow" tests, "flink" tests or "comparison" between all 3 execution mode ( kp, dp and flink modes ).')
+    
+    # Initially parse known arguments to determine the mode
+    args, unknown = parser.parse_known_args()
+    
+    if args.mode == 'comparison':
+        parser.add_argument('res_dir', type=str, help='Path to the results directory were will be saved the images')
+        parser.add_argument('kp_dir', type=str, help='Path to the key partitioning wf mode directory')
+        parser.add_argument('dp_dir', type=str, help='Path to the data partitioning wf mode directory')
+        parser.add_argument('fl_dir', type=str, help='Path to the flink tests directory')
+        parser.add_argument('img_name', type=str, help='Name of the image file to generate')
+    else:
+        parser.add_argument('chart_type', type=str, choices=['lt', 'th', 'all', 'batch', 'src'], help='Chart type: "lt" for latency, "th" for throughput, "all" for both, "src" for average performence per source, "batch" for average performence per batch')
+        parser.add_argument('tests_path', type=str, help='Path to the tests folders')
+    
+    # Re-parse all arguments including the newly added ones
+    args = parser.parse_args()
+    return args
 
 args = parse_arguments()
 
@@ -83,9 +97,8 @@ def draw_latency_chart(tests_path):
     plt.ylabel('Latency (ms)')
 
     fig.set_dpi(100)
-    fig.set_size_inches(18, 10, forward=True)
-    fig.savefig(os.path.join(tests_path, 'latency.svg'))
-    #fig.savefig(os.path.join(tests_path, 'latency.png'))
+    fig.set_size_inches(14, 10, forward=True)
+    fig.savefig(os.path.join(tests_path, 'latency.svg'), bbox_inches='tight', pad_inches=0.2)
 
 def draw_throughput_chart(tests_path):
     folders = sorted([folder for folder in os.listdir(tests_path) if os.path.isdir(os.path.join(tests_path, folder))], key=lambda x: int(x.split('_')[0]))
@@ -113,31 +126,32 @@ def draw_throughput_chart(tests_path):
     plt.ylabel('Throughput (tuples/s)')
 
     fig.set_dpi(100)
-    fig.set_size_inches(18, 10, forward=True)
-    fig.savefig(os.path.join(tests_path, 'throughput.svg'))
-    #fig.savefig(os.path.join(tests_path, 'throughput.png'))
+    fig.set_size_inches(14, 10, forward=True)
+    fig.savefig(os.path.join(tests_path, 'throughput.svg'), bbox_inches='tight', pad_inches=0.2)
 
-def draw_avgmetrics_per_source(sources_path):
-    # Get the list of source folders, sorted
-    sources_folders = sorted([folder for folder in os.listdir(sources_path) if os.path.isdir(os.path.join(sources_path, folder))], key=lambda x: int(x.split('_')[1]))
+def draw_avgmetrics(label_prefix, avg_path, source_dir=''):
+    # Get the list of batch folders, sorted
+    iter_folders = sorted([folder for folder in os.listdir(avg_path) if os.path.isdir(os.path.join(avg_path, folder))], key=lambda x: int(x.split('_')[0]))
+    # Define the colors for the lines and batches sizes for the legend labels
+    label_values = sorted([int(folder.split('_')[0]) for folder in iter_folders])
+    colors = ['b', 'g', 'r' ,'y' ]
+
     # Initialize the figure and axis for the plot
     fig, (lt, th) = plt.subplots(2, 1)
-    # Define the colors for the lines
-    rates = sorted([int(folder.split('_')[1]) for folder in sources_folders])
-    colors = ['b', 'g', 'y', 'r']
-
-    # Iterate over the source folders
-    for i, source_folder in enumerate(sources_folders):
+    # Iterate over the batch folders
+    for i, i_folder in enumerate(iter_folders):
         # Initialize y list for the plots
         y_lt = []
         y_th = []
+
         # Get the list of parallelism folders, sorted
-        parallelism_folders = sorted([folder for folder in os.listdir(os.path.join(sources_path, source_folder)) if os.path.isdir(os.path.join(sources_path, source_folder, folder))], key=lambda x: int(x.split('_')[0]))
+        dir_path = os.path.join(avg_path, i_folder, source_dir)
+        parallelism_folders = sorted([folder for folder in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, folder))], key=lambda x: int(x.split('_')[0]))
         
         # Iterate over the parallelism folders
         for parallelism_folder in parallelism_folders:
             # Load the latency data from the file
-            latency_file = os.path.join(sources_path, source_folder, parallelism_folder, 'latency.json')
+            latency_file = os.path.join(dir_path, parallelism_folder, 'latency.json')
             with open(latency_file, 'r') as file:
                 data = json.load(file)
                 mean_latency = np.mean([entry['mean']/1000 for entry in data])
@@ -145,83 +159,7 @@ def draw_avgmetrics_per_source(sources_path):
             y_lt.append(mean_latency)
 
             # Load the throughput data from the file
-            throughput_file = os.path.join(sources_path, source_folder, parallelism_folder, 'throughput.json')
-            with open(throughput_file, 'r') as file:
-                data = json.load(file)
-                mean_throughput = np.mean(np.array(data), axis=0)
-
-            # Append the mean throughput to the y values
-            y_th.append(mean_throughput)
-
-        # Plot the line for this source folder
-        lt.plot(y_lt, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=9, ls='-', lw=2)
-        th.plot(y_th, color=colors[i % len(colors)], label="source = " + str(rates[i % len(rates)]), marker="x", markersize=9, ls='-', lw=2)
-
-    _, max_y = lt.get_ylim()
-    tick_interval = round(max_y / 15)
-    lt.set_yticks(np.arange(0, max_y, tick_interval))
-    lt.grid(True, axis = "y", ls='--', lw=1, alpha=.8 )
-    lt.set_axisbelow(True)
-
-    th.grid(True, axis = "y", ls='--', lw=1, alpha=.8 )
-    th.set_axisbelow(True)
-
-    # Set the labels for the plot
-    x_labels, _ = get_x_labels(parallelism_folders)
-    lt.set_xticks(range(len(x_labels)), x_labels)
-    th.set_xticks(range(len(x_labels)), x_labels)
-    plt.xlabel('Parallelism')
-
-    lt.set_ylabel('Average Latency (ms)',fontweight ='bold')
-    th.set_ylabel('Average Throughput (tuples/s)',fontweight ='bold')
-
-    # Add a legend
-    #legend_labels = [f"Source {i+1}" for i in range(len(sources_folders))]
-    lt.legend()
-
-    fig.set_dpi(100)
-    fig.set_size_inches(14, 10, forward=True)
-    fig.savefig(os.path.join(sources_path, 'source.svg'), bbox_inches='tight', pad_inches=0.2)
-    #fig.savefig(os.path.join(sources_path, 'source.png'))
-
-    th.legend()
-    th_extent = th.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(sources_path, 'source_throughput.svg'), bbox_inches=th_extent.expanded(1.1, 1.2))
-
-    lt_extent = lt.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(sources_path, 'source_latency.svg'), bbox_inches=lt_extent.expanded(1.1, 1.2))
-
-def draw_avgmetrics_per_batch(batch_path):
-    # Get the list of batch folders, sorted
-    batch_folders = sorted([folder for folder in os.listdir(batch_path) if os.path.isdir(os.path.join(batch_path, folder))], key=lambda x: int(x.split('_')[0]))
-    # Initialize the figure and axis for the plot
-    fig, (lt, th) = plt.subplots(2, 1)
-
-    # Define the colors for the lines and batches sizes for the legend labels
-    batches = sorted([int(folder.split('_')[0]) for folder in batch_folders])
-    colors = ['b', 'g', 'r' ,'y' ]
-
-    # Iterate over the batch folders
-    for i, batch_folder in enumerate(batch_folders):
-        # Initialize y list for the plots
-        y_lt = []
-        y_th = []
-
-        # Get the list of parallelism folders, sorted
-        main_path = os.path.join(batch_path, batch_folder, 'source_1')
-        parallelism_folders = sorted([folder for folder in os.listdir(main_path) if os.path.isdir(os.path.join(main_path, folder))], key=lambda x: int(x.split('_')[0]))
-        # Iterate over the parallelism folders
-        for parallelism_folder in parallelism_folders:
-            # Load the latency data from the file
-            latency_file = os.path.join(main_path, parallelism_folder, 'latency.json')
-            with open(latency_file, 'r') as file:
-                data = json.load(file)
-                mean_latency = np.mean([entry['mean']/1000 for entry in data])
-            # Append the mean latency to the y values
-            y_lt.append(mean_latency)
-
-            # Load the throughput data from the file
-            throughput_file = os.path.join(main_path, parallelism_folder, 'throughput.json')
+            throughput_file = os.path.join(dir_path, parallelism_folder, 'throughput.json')
             with open(throughput_file, 'r') as file:
                 data = json.load(file)
                 mean_throughput = np.mean(np.array(data), axis=0)
@@ -230,9 +168,55 @@ def draw_avgmetrics_per_batch(batch_path):
             y_th.append(mean_throughput)
 
         # Plot the lines per batch size per metric
-        lt.plot(y_lt, color=colors[i % len(colors)], label="batch = " + str(batches[i % len(batches)]), marker="x", markersize=9, ls='-', lw=2)
-        th.plot(y_th, color=colors[i % len(colors)], label="batch = " + str(batches[i % len(batches)]), marker="x", markersize=9, ls='-', lw=2)
+        lt.plot(y_lt, color=colors[i % len(colors)], label=label_prefix + " = " + str(label_values[i % len(label_values)]), marker="x", markersize=9, ls='-', lw=2)
+        th.plot(y_th, color=colors[i % len(colors)], label=label_prefix + " = " + str(label_values[i % len(label_values)]), marker="x", markersize=9, ls='-', lw=2)
 
+    x_labels, _ = get_x_labels(parallelism_folders)
+    save_avg_figures(avg_path, ('batch'+source_dir ), fig, th, lt, x_labels)
+
+def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
+    # Get the list of batch folders, sorted
+    iter_folders = sorted([folder for folder in os.listdir(kp_dir) if os.path.isdir(os.path.join(kp_dir, folder))], key=lambda x: int(x.split('_')[0]))
+
+    x_labels, _ = get_x_labels(iter_folders)
+    x = np.arange(len(x_labels))
+    variant = ['Flink', 'Key Partitioning', 'Data Partitioning']
+    bar_means = {
+        'Flink': [],
+        'Key Partitioning': [],
+        'Data Partitioning': []
+    }
+    width = 0.25
+    multiplier = 0
+
+    for i, i_folder in enumerate(iter_folders):
+        for j, folder in enumerate([fl_dir, kp_dir, dp_dir]):
+            dir_path = os.path.join(folder, i_folder)
+            throughput_file = os.path.join(dir_path, 'throughput.json')
+            with open(throughput_file, 'r') as file:
+                data = json.load(file)
+                mean_throughput = np.mean(np.array(data), axis=0)
+                bar_means[variant[j]].append(mean_throughput)
+
+    fig, ax = plt.subplots()
+    for attribute, means in bar_means.items():
+        offset = width * multiplier
+        rects = ax.bar(x + offset, means, width, label=attribute)
+        #ax.bar_label(rects, fmt = '%d', padding=3)
+        multiplier += 1
+    
+    ax.set_ylabel('Average Throughput (tuples/s)', fontweight ='bold')
+    ax.set_xticks(x + width, x_labels)
+    ax.legend(loc='upper left', ncols=3)
+    ax.grid(True, axis = "y", ls='--', lw=1, alpha=.8 )
+    ax.set_axisbelow(True)
+
+    fig.set_dpi(100)
+    fig.set_size_inches(14, 10, forward=True)
+    fig.savefig(os.path.join(res_dir, (img_name+'_throughput.svg')), bbox_inches='tight', pad_inches=0.2)
+    return
+
+def save_avg_figures(path, img_name, fig, th, lt, x_labels, dpi=100, size=(14, 10)):
     _, max_y = lt.get_ylim()
     tick_interval = round(max_y / 15)
     lt.set_yticks(np.arange(0, max_y, tick_interval))
@@ -243,7 +227,6 @@ def draw_avgmetrics_per_batch(batch_path):
     th.set_axisbelow(True)
 
     # Set the labels for the plot
-    x_labels, _ = get_x_labels(parallelism_folders)
     lt.set_xticks(range(len(x_labels)), x_labels)
     th.set_xticks(range(len(x_labels)), x_labels)
     plt.xlabel('Parallelism')
@@ -252,26 +235,28 @@ def draw_avgmetrics_per_batch(batch_path):
     th.set_ylabel('Average Throughput (tuples/s)',fontweight ='bold')
     lt.legend()
 
-    fig.set_dpi(100)
-    fig.set_size_inches(14, 10, forward=True)
-    fig.savefig(os.path.join(batch_path, 'batch.svg'), bbox_inches='tight', pad_inches=0.2)
-    #fig.savefig(os.path.join(sources_path, 'batch.png'))
+    fig.set_dpi(dpi)
+    fig.set_size_inches(size, forward=True)
+    fig.savefig(os.path.join(path, (img_name+'.svg')), bbox_inches='tight', pad_inches=0.2)
 
     th.legend()
     th_extent = th.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(batch_path, 'batch_throughput.svg'), bbox_inches=th_extent.expanded(1.1, 1.2))
+    fig.savefig(os.path.join(path, (img_name+'_throughput.svg')), bbox_inches=th_extent.expanded(1.1, 1.2))
 
     lt_extent = lt.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(batch_path, 'batch_latency.svg'), bbox_inches=lt_extent.expanded(1.1, 1.2))
+    fig.savefig(os.path.join(path, (img_name+'_latency.svg')), bbox_inches=lt_extent.expanded(1.1, 1.2))
 
 def draw_charts(args):
-    switch = {
-        'th': draw_throughput_chart,
-        'lt': draw_latency_chart,
-        'src': draw_avgmetrics_per_source,
-        'batch': draw_avgmetrics_per_batch,
-        'all': lambda tests_path: (draw_throughput_chart(tests_path), draw_latency_chart(tests_path))
-    }
-    switch[args.chart_type](args.tests_path)
+    if args.mode == 'comparison':
+        draw_comparison_charts(args.res_dir, args.kp_dir, args.dp_dir, args.fl_dir, args.img_name)
+    else:
+        switch = {
+                    'th': draw_throughput_chart,
+                    'lt': draw_latency_chart,
+                    'all': lambda tests_path: (draw_throughput_chart(tests_path), draw_latency_chart(tests_path)),
+                    'src': lambda tests_path: draw_avgmetrics('source', tests_path),  
+                    'batch': lambda tests_path: [draw_avgmetrics('batch', tests_path, source_dir) for source_dir in ['1_source', '2_sources', '3_sources', '4_sources']]
+                }
+        switch[args.chart_type](args.tests_path)
 
 draw_charts(args)
