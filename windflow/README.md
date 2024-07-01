@@ -29,7 +29,7 @@ make all
 - **Key Partitioning**
 - **Data Partitioning** ( with single buffer per stream, per replica )
 
-> In case of Data Partitioning if you want to perform measurements of how uniformerly the tuples are distributed among the joiners in DP mode add the `-WF_DP_JOIN_MEASUREMENT` flag to `MARCO` variable in `src/Makefile`
+> In case of Data Partitioning if you want to perform measurements of how uniformerly the tuples are distributed among the joiners add the `-WF_JOIN_MEASUREMENT` flag to `MARCO` variable in `src/Makefile`
 
 ## Example
 ``./bin/ij --rate 0 --sampling 100 --batch 0 --parallelism 1,1,1,1 --type su --mode k -l -500 -u 500 [--chaining] ``
