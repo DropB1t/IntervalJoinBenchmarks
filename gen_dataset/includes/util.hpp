@@ -52,7 +52,7 @@ const string command_help = "Parameters: --num_key <value> [--size <dataset_size
                             "\n\nOptions:"
                             "\n\t--num_key <value> : number of keys"
                             "\n\t--type < su | sz > : type of test to run"
-                            "\n\t--size <dataset_size> : size of the dataset (default: 200000)"
+                            "\n\t--size <dataset_size> : size of the dataset (default: 2000000)"
                             "\n\t--zipf <zipf_exponent> : zipf exponent (default: 0.8)"
                             "\n\t--help : print this help message";
 
