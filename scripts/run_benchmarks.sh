@@ -235,6 +235,9 @@ mode_comparison_charts() {
     types=("${zipfian_skews[@]}" "${real_type[@]}")
     for type in "${types[@]}"; do
         local type=$(get_type "$type")
+        local save_dir="$res_dir/${type}_comparison"
+        mkdir -p "$save_dir"
+        rm -f "$save_dir"/*
         for key in "${num_key[@]}"; do
             local keydir=$(get_keydir "$key")
             for batch in "${batch_size[@]}"; do
@@ -250,7 +253,7 @@ mode_comparison_charts() {
                     fi
                     img_name="${type}_${key}_keys_${s_deg}_srate_${batch}_wf_batch"
                     if [ -d "$kp_dir" ] && [ -d "$dp_dir" ] && [ -d "$fl_dir" ]; then
-                        python3 $SCRIPT_DIR/draw_charts.py comparison "${res_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
+                        python3 $SCRIPT_DIR/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
                     fi
                 done
             done

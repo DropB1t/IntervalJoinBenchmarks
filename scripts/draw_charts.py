@@ -214,6 +214,31 @@ def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
     fig.set_dpi(100)
     fig.set_size_inches(14, 10, forward=True)
     fig.savefig(os.path.join(res_dir, (img_name+'_throughput.svg')), bbox_inches='tight', pad_inches=0.2)
+
+    # Create the latency chart
+    fig, ax = plt.subplots()
+    y_lt = []
+
+    for j, folder in enumerate([fl_dir, kp_dir, dp_dir]):
+        for i, i_folder in enumerate(iter_folders):
+            dir_path = os.path.join(folder, i_folder)
+            latency_file = os.path.join(dir_path, 'latency.json')
+            with open(latency_file, 'r') as file:
+                data = json.load(file)
+                mean_latency = np.mean([entry['mean']/1000 for entry in data])
+                y_lt.append(mean_latency)
+        ax.plot(y_lt, label=variant[j], marker="x", markersize=9, ls='-', lw=2)
+        y_lt = []
+    
+    ax.set_ylabel('Average Latency (ms)', fontweight ='bold')
+    ax.set_xticks(range(len(x_labels)), x_labels)
+    ax.legend(loc='upper left', ncols=3)
+    ax.grid(True, axis = "y", ls='--', lw=1, alpha=.8 )
+    ax.set_axisbelow(True)
+
+    fig.set_dpi(100)
+    fig.set_size_inches(14, 10, forward=True)
+    fig.savefig(os.path.join(res_dir, (img_name+'_latency.svg')), bbox_inches='tight', pad_inches=0.2)
     return
 
 def save_avg_figures(path, img_name, fig, th, lt, x_labels, dpi=100, size=(14, 10)):
