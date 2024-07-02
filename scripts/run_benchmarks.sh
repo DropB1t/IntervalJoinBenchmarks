@@ -69,10 +69,10 @@ main() {
         echo "Compiling..."
         compile_all
     fi
-    #wf_run_synthetic_benchmarks
-    #wf_run_real_benchmarks
-    #fl_run_synthetic_benchmarks
-    #fl_run_real_benchmarks
+    wf_run_synthetic_benchmarks
+    wf_run_real_benchmarks
+    fl_run_synthetic_benchmarks
+    fl_run_real_benchmarks
     mode_comparison_charts
     echo "Done!"
 }

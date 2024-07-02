@@ -280,7 +280,7 @@ def draw_charts(args):
                     'lt': draw_latency_chart,
                     'all': lambda tests_path: (draw_throughput_chart(tests_path), draw_latency_chart(tests_path)),
                     'src': lambda tests_path: draw_avgmetrics('source', tests_path),  
-                    'batch': lambda tests_path: [draw_avgmetrics('batch', tests_path, source_dir) for source_dir in ['1_source', '2_sources', '3_sources', '4_sources']]
+                    'batch': lambda tests_path: [draw_avgmetrics('batch', tests_path, source_dir) for source_dir in ['1_source', '2_source', '3_source', '4_source']]
                 }
         switch[args.chart_type](args.tests_path)
 
