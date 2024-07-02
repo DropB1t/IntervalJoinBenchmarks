@@ -10,7 +10,7 @@ import numpy as np
 from tol_colors import tol_cset
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Draw latency or throughput chart.')
+    parser = argparse.ArgumentParser(description='Draw latency, throughput, per batch, per source and comparison charts.')
     parser.add_argument('mode', type=str, choices=['wf', 'fl', 'comparison'], help='Benchmark: "windflow" tests, "flink" tests or "comparison" between all 3 execution mode ( kp, dp and flink modes ).')
     
     # Initially parse known arguments to determine the mode
@@ -172,7 +172,7 @@ def draw_avgmetrics(label_prefix, avg_path, source_dir=''):
         th.plot(y_th, color=colors[i % len(colors)], label=label_prefix + " = " + str(label_values[i % len(label_values)]), marker="x", markersize=9, ls='-', lw=2)
 
     x_labels, _ = get_x_labels(parallelism_folders)
-    save_avg_figures(avg_path, ('batch'+source_dir ), fig, th, lt, x_labels)
+    save_avg_figures(avg_path, ('batch_'+source_dir ), fig, th, lt, x_labels)
 
 def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
     # Get the list of batch folders, sorted
@@ -270,6 +270,19 @@ def save_avg_figures(path, img_name, fig, th, lt, x_labels, dpi=100, size=(14, 1
 
     lt_extent = lt.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(os.path.join(path, (img_name+'_latency.svg')), bbox_inches=lt_extent.expanded(1.1, 1.2))
+
+def draw_avgmetrics_per_batch(tests_path):
+    batch = ''
+    for item in os.listdir(tests_path):
+        if not os.path.isdir(os.path.join(tests_path, item)):
+            continue
+        batch = item
+        break
+    if batch == '':
+        raise Exception('Invalid test path in draw_avgmetrics_per_batch function')
+    source_folders = sorted([folder for folder in os.listdir(os.path.join(tests_path, batch)) if os.path.isdir(os.path.join(tests_path, batch, folder))], key=lambda x: int(x.split('_')[0]))
+    for source_folder in source_folders:
+        draw_avgmetrics('batch', tests_path, source_folder)
 
 def draw_charts(args):
     if args.mode == 'comparison':
