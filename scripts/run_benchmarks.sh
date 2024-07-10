@@ -86,7 +86,8 @@ wf_run_synthetic_benchmarks() {
         #    local boundir="5s"
         #fi
         for skewness in "${zipfian_skews[@]}"; do
-            local type=$(get_type "$skewness")
+            local type=$(get_synthetic_type "$skewness")
+            local typedir=$(get_typedir "$skewness")
             for mode in "${exec_mode[@]}"; do 
                 if [ "$mode" == "k" ]; then
                     local mp="kp"
@@ -100,8 +101,8 @@ wf_run_synthetic_benchmarks() {
                         for s_deg in "${source_degrees[@]}"; do
                             local i=1
                             for p_deg in "${parallelism[@]}"; do
-                                # Add ../wf/${boundir}/${type}/.. to the path if you want to discriminate between interval boundaries
-                                local test_dir="$res_dir/wf/${type}/${mp}/${keydir}/${batch}_batch/${s_deg}_source/$((i++))_test_${p_deg}"
+                                # Add ../wf/${boundir}/${typedir}/.. to the path if you want to discriminate between interval boundaries
+                                local test_dir="$res_dir/wf/${typedir}/${mp}/${keydir}/${batch}_batch/${s_deg}_source/$((i++))_test_${p_deg}"
                                 mkdir -p "$test_dir"
                                 rm -f "$test_dir"/*
                                 for run in $(seq 1 "$num_runs"); do
@@ -168,14 +169,15 @@ fl_run_synthetic_benchmarks() {
     rm -f throughput.json
     for bound_idx in "${!lower_bounds[@]}"; do
         for skewness in "${zipfian_skews[@]}"; do
-            local type=$(get_type "$skewness")
+            local type=$(get_synthetic_type "$skewness")
+            local typedir=$(get_typedir "$skewness")
             for key in "${num_key[@]}"; do
                 local keydir=$(get_keydir "$key")
                 gen_dataset "$key" "$type" "$skewness"
                 for s_deg in "${source_degrees[@]}"; do
                     local i=1
                     for p_deg in "${parallelism[@]}"; do
-                        local test_dir="$res_dir/fl/${type}/${keydir}/${s_deg}_source/$((i++))_test_${p_deg}"
+                        local test_dir="$res_dir/fl/${typedir}/${keydir}/${s_deg}_source/$((i++))_test_${p_deg}"
                         mkdir -p "$test_dir"
                         rm -f "$test_dir"/*
                         for run in $(seq 1 "$num_runs"); do
@@ -234,7 +236,7 @@ fl_run_real_benchmarks() {
 mode_comparison_charts() {
     types=("${zipfian_skews[@]}" "${real_type[@]}")
     for type in "${types[@]}"; do
-        local type=$(get_type "$type")
+        local type=$(get_typedir "$type")
         local save_dir="$res_dir/${type}_comparison"
         mkdir -p "$save_dir"
         rm -f "$save_dir"/*
@@ -271,7 +273,7 @@ get_keydir() {
     fi
 }
 
-get_type() {
+get_typedir() {
     local type="$1"
     if [ "$type" == "rd" ] || [ "$type" == "sd" ]; then
         echo "${type}"
@@ -279,6 +281,15 @@ get_type() {
         echo "${synt_type[0]}"
     else
         echo "${synt_type[1]}_${type}"
+    fi
+}
+
+get_synthetic_type() {
+    local skewness="$1"
+    if [ "$skewness" == "0.0" ]; then
+        echo "${synt_type[0]}"
+    else
+        echo "${synt_type[1]}"
     fi
 }
 
