@@ -233,9 +233,8 @@ fl_run_real_benchmarks() {
     cd - || exit
 }
 
-mode_comparison_charts() {
-    types=("${zipfian_skews[@]}" "${real_type[@]}")
-    for type in "${types[@]}"; do
+synt_mode_comparison_charts() {
+    for type in "${zipfian_skews[@]}"; do
         local type=$(get_typedir "$type")
         local save_dir="$res_dir/${type}_comparison"
         mkdir -p "$save_dir"
@@ -244,20 +243,33 @@ mode_comparison_charts() {
             local keydir=$(get_keydir "$key")
             for batch in "${batch_size[@]}"; do
                 for s_deg in "${source_degrees[@]}"; do
-                    if [ "$type" != "rd" ] || [ "$type" != "sd" ]; then
-                        local kp_dir="$res_dir/wf/${type}/kp/${keydir}/${batch}_batch/${s_deg}_source"
-                        local dp_dir="$res_dir/wf/${type}/dp/${keydir}/${batch}_batch/${s_deg}_source"
-                        local fl_dir="$res_dir/fl/${type}/${keydir}/${s_deg}_source"
-                    else
-                        local kp_dir="$res_dir/wf/${type}/kp/${batch}_batch/${s_deg}_source"
-                        local dp_dir="$res_dir/wf/${type}/dp/${batch}_batch/${s_deg}_source"
-                        local fl_dir="$res_dir/fl/${type}/${s_deg}_source"
-                    fi
+                    local kp_dir="$res_dir/wf/${type}/kp/${keydir}/${batch}_batch/${s_deg}_source"
+                    local dp_dir="$res_dir/wf/${type}/dp/${keydir}/${batch}_batch/${s_deg}_source"
+                    local fl_dir="$res_dir/fl/${type}/${keydir}/${s_deg}_source"
                     img_name="${type}_${key}_keys_${s_deg}_srate_${batch}_wf_batch"
                     if [ -d "$kp_dir" ] && [ -d "$dp_dir" ] && [ -d "$fl_dir" ]; then
                         python3 $SCRIPT_DIR/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
                     fi
                 done
+            done
+        done
+    done
+}
+
+real_mode_comparison_charts() {
+    for type in "${real_type[@]}"; do
+        local save_dir="$res_dir/${type}_comparison"
+        mkdir -p "$save_dir"
+        rm -f "$save_dir"/*
+        for batch in "${batch_size[@]}"; do
+            for s_deg in "${source_degrees[@]}"; do
+                local kp_dir="$res_dir/wf/${type}/kp/${batch}_batch/${s_deg}_source"
+                local dp_dir="$res_dir/wf/${type}/dp/${batch}_batch/${s_deg}_source"
+                local fl_dir="$res_dir/fl/${type}/${s_deg}_source"
+                img_name="${type}_${s_deg}_srate_${batch}_wf_batch"
+                if [ -d "$kp_dir" ] && [ -d "$dp_dir" ] && [ -d "$fl_dir" ]; then
+                    python3 $SCRIPT_DIR/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
+                fi
             done
         done
     done
