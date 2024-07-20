@@ -73,7 +73,8 @@ main() {
     wf_run_real_benchmarks
     fl_run_synthetic_benchmarks
     fl_run_real_benchmarks
-    mode_comparison_charts
+    synt_mode_comparison_charts
+    real_mode_comparison_charts
     echo "Done!"
 }
 
@@ -238,7 +239,7 @@ synt_mode_comparison_charts() {
         local type=$(get_typedir "$type")
         local save_dir="$res_dir/${type}_comparison"
         mkdir -p "$save_dir"
-        rm -f "$save_dir"/*
+        #rm -f "$save_dir"/*
         for key in "${num_key[@]}"; do
             local keydir=$(get_keydir "$key")
             for batch in "${batch_size[@]}"; do
@@ -260,7 +261,7 @@ real_mode_comparison_charts() {
     for type in "${real_type[@]}"; do
         local save_dir="$res_dir/${type}_comparison"
         mkdir -p "$save_dir"
-        rm -f "$save_dir"/*
+        #rm -f "$save_dir"/*
         for batch in "${batch_size[@]}"; do
             for s_deg in "${source_degrees[@]}"; do
                 local kp_dir="$res_dir/wf/${type}/kp/${batch}_batch/${s_deg}_source"
