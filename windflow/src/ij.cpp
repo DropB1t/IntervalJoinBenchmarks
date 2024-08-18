@@ -21,6 +21,11 @@
  **************************************************************************************
  */
 
+using namespace std;
+using namespace chrono;
+using namespace ff;
+using namespace wf; // synthetic
+
 #include <string>
 #include <vector>
 #include <iostream>
@@ -37,10 +42,6 @@
 #include "util/tuple.hpp"
 #include "util/util.hpp"
 
-using namespace std;
-using namespace chrono;
-using namespace ff;
-using namespace wf; // synthetic
 
 typedef enum
 {
