@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
 
 # run_benchmarks configuration file
 SAMPLING=250

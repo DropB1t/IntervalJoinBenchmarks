@@ -53,7 +53,7 @@ fi
 ( "$SCRIPT_DIR/download_datasets.sh" )
 
 if command -v pip &> /dev/null; then
-    cd $SCRIPT_DIR || exit
+    cd "$SCRIPT_DIR" || exit
     pip install -r requirements.txt 1> /dev/null
     cd - || exit
 else
@@ -61,7 +61,8 @@ else
     exit 1
 fi
 
-. "$SCRIPT_DIR/config.sh"
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR"/config.sh
 
 main() {
     echo "${num_runs} runs will be executed for each benchmark."
@@ -78,8 +79,9 @@ main() {
     echo "Done!"
 }
 
+# shellcheck disable=SC2154
 wf_run_synthetic_benchmarks() {
-    cd $WF_BENCH_DIR || exit
+    cd "$WF_BENCH_DIR" || exit
     for bound_idx in "${!lower_bounds[@]}"; do
         #if [ "${upper_bounds[$bound_idx]}" == 500 ]; then
         #    local boundir="1s"
@@ -87,8 +89,10 @@ wf_run_synthetic_benchmarks() {
         #    local boundir="5s"
         #fi
         for skewness in "${zipfian_skews[@]}"; do
-            local type=$(get_synthetic_type "$skewness")
-            local typedir=$(get_typedir "$skewness")
+            local type
+            type=$(get_synthetic_type "$skewness")
+            local typedir
+            typedir=$(get_typedir "$skewness")
             for mode in "${exec_mode[@]}"; do 
                 if [ "$mode" == "k" ]; then
                     local mp="kp"
@@ -96,7 +100,8 @@ wf_run_synthetic_benchmarks() {
                     local mp="dp"
                 fi
                 for key in "${num_key[@]}"; do
-                    local keydir=$(get_keydir "$key")
+                    local keydir
+                    keydir=$(get_keydir "$key")
                     gen_dataset "$key" "$type" "$skewness"
                     for batch in "${batch_size[@]}"; do
                         for s_deg in "${source_degrees[@]}"; do
@@ -112,14 +117,14 @@ wf_run_synthetic_benchmarks() {
                                 done
                             done
                             chart_path="${test_dir%/*}"
-                            python3 $SCRIPT_DIR/draw_charts.py wf all "$chart_path"
+                            python3 "$SCRIPT_DIR"/draw_charts.py wf all "$chart_path"
                         done
                         # Average latency per source degree and parallelism
                         src_path="${chart_path%/*}"
-                        python3 $SCRIPT_DIR/draw_charts.py wf src "$src_path"
+                        python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
                     done
                     batch_path="${test_dir%/*_batch*}"
-                    python3 $SCRIPT_DIR/draw_charts.py wf batch "$batch_path"
+                    python3 "$SCRIPT_DIR"/draw_charts.py wf batch "$batch_path"
                 done
             done
         done
@@ -127,8 +132,9 @@ wf_run_synthetic_benchmarks() {
     cd - || exit
 }
 
+# shellcheck disable=SC2154
 wf_run_real_benchmarks() {
-    cd $WF_BENCH_DIR || exit
+    cd "$WF_BENCH_DIR" || exit
     for bound_idx in "${!lower_bounds[@]}"; do
         for type in "${real_type[@]}"; do
             for mode in "${exec_mode[@]}"; do
@@ -150,14 +156,14 @@ wf_run_real_benchmarks() {
                             done
                         done
                         chart_path="${test_dir%/*}"
-                        python3 $SCRIPT_DIR/draw_charts.py wf all "$chart_path"
+                        python3 "$SCRIPT_DIR"/draw_charts.py wf all "$chart_path"
                     done
                     # Average latency per source degree and parallelism
                     src_path="${chart_path%/*}"
-                    python3 $SCRIPT_DIR/draw_charts.py wf src "$src_path"
+                    python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
                 done
                 batch_path="${test_dir%/*_batch*}"
-                python3 $SCRIPT_DIR/draw_charts.py wf batch "$batch_path"
+                python3 "$SCRIPT_DIR"/draw_charts.py wf batch "$batch_path"
             done
         done
     done
@@ -165,15 +171,18 @@ wf_run_real_benchmarks() {
 }
 
 fl_run_synthetic_benchmarks() {
-    cd $FL_BENCH_DIR || exit
+    cd "$FL_BENCH_DIR" || exit
     rm -f latency.json
     rm -f throughput.json
     for bound_idx in "${!lower_bounds[@]}"; do
         for skewness in "${zipfian_skews[@]}"; do
-            local type=$(get_synthetic_type "$skewness")
-            local typedir=$(get_typedir "$skewness")
+            local type
+            type=$(get_synthetic_type "$skewness")
+            local typedir
+            typedir=$(get_typedir "$skewness")
             for key in "${num_key[@]}"; do
-                local keydir=$(get_keydir "$key")
+                local keydir
+                keydir=$(get_keydir "$key")
                 gen_dataset "$key" "$type" "$skewness"
                 for s_deg in "${source_degrees[@]}"; do
                     local i=1
@@ -190,12 +199,12 @@ fl_run_synthetic_benchmarks() {
                         rm -f throughput.json
                     done
                     chart_path="${test_dir%/*}"
-                    python3 $SCRIPT_DIR/draw_charts.py fl all "$chart_path"
+                    python3 "$SCRIPT_DIR"/draw_charts.py fl all "$chart_path"
                 done
                 # Average latency per source degree and parallelism
                 src_path="${chart_path%/*}"
                 echo "$src_path"
-                python3 $SCRIPT_DIR/draw_charts.py wf src "$src_path"
+                python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
             done
         done
     done
@@ -203,7 +212,7 @@ fl_run_synthetic_benchmarks() {
 }
 
 fl_run_real_benchmarks() {
-    cd $FL_BENCH_DIR || exit
+    cd "$FL_BENCH_DIR" || exit
     rm -f latency.json
     rm -f throughput.json
     for bound_idx in "${!lower_bounds[@]}"; do
@@ -223,12 +232,12 @@ fl_run_real_benchmarks() {
                     rm -f throughput.json
                 done
                 chart_path="${test_dir%/*}"
-                python3 $SCRIPT_DIR/draw_charts.py fl all "$chart_path"
+                python3 "$SCRIPT_DIR"/draw_charts.py fl all "$chart_path"
             done
             # Average latency per source degree and parallelism
             src_path="${chart_path%/*}"
             echo "$src_path"
-            python3 $SCRIPT_DIR/draw_charts.py wf src "$src_path"
+            python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
         done
     done
     cd - || exit
@@ -236,12 +245,14 @@ fl_run_real_benchmarks() {
 
 synt_mode_comparison_charts() {
     for type in "${zipfian_skews[@]}"; do
-        local type=$(get_typedir "$type")
+        local type
+        type=$(get_typedir "$type")
         local save_dir="$res_dir/${type}_comparison"
         mkdir -p "$save_dir"
         #rm -f "$save_dir"/*
         for key in "${num_key[@]}"; do
-            local keydir=$(get_keydir "$key")
+            local keydir
+            keydir=$(get_keydir "$key")
             for batch in "${batch_size[@]}"; do
                 for s_deg in "${source_degrees[@]}"; do
                     local kp_dir="$res_dir/wf/${type}/kp/${keydir}/${batch}_batch/${s_deg}_source"
@@ -249,7 +260,7 @@ synt_mode_comparison_charts() {
                     local fl_dir="$res_dir/fl/${type}/${keydir}/${s_deg}_source"
                     img_name="${type}_${key}_keys_${s_deg}_srate_${batch}_wf_batch"
                     if [ -d "$kp_dir" ] && [ -d "$dp_dir" ] && [ -d "$fl_dir" ]; then
-                        python3 $SCRIPT_DIR/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
+                        python3 "$SCRIPT_DIR"/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
                     fi
                 done
             done
@@ -269,7 +280,7 @@ real_mode_comparison_charts() {
                 local fl_dir="$res_dir/fl/${type}/${s_deg}_source"
                 img_name="${type}_${s_deg}_srate_${batch}_wf_batch"
                 if [ -d "$kp_dir" ] && [ -d "$dp_dir" ] && [ -d "$fl_dir" ]; then
-                    python3 $SCRIPT_DIR/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
+                    python3 "$SCRIPT_DIR"/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
                 fi
             done
         done
@@ -291,7 +302,7 @@ get_typedir() {
     if [ "$type" == "rd" ] || [ "$type" == "sd" ]; then
         echo "${type}"
     elif [ "$type" == "0.0" ]; then
-        echo "${synt_type[0]}"
+        echo "${synt_type[0]:?}"
     else
         echo "${synt_type[1]}_${type}"
     fi
@@ -310,7 +321,7 @@ gen_dataset() {
     local key="$1"
     local type="$2"
     local zipfian_skewness="$3"
-    cd $GEN_DIR || exit
+    cd "$GEN_DIR" || exit
     if [ "$type" == "su" ]; then
         ./bin/gen --num_key "$key" --type "$type" 
     else
@@ -320,13 +331,13 @@ gen_dataset() {
 }
 
 compile_all() {
-    cd $FL_BENCH_DIR || exit
+    cd "$FL_BENCH_DIR" || exit
     mvn clean package
     cd - || exit
-    cd $WF_BENCH_DIR || exit
+    cd "$WF_BENCH_DIR" || exit
     make
     cd - || exit
-    cd $GEN_DIR || exit
+    cd "$GEN_DIR" || exit
     make
     cd - || exit
 }
