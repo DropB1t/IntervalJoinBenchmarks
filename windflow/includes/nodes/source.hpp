@@ -134,8 +134,8 @@ public:
         if (generated_tuples != 0) {
             double delta_time = static_cast<double>(current_time - app_start_time);
             cout << "[Source_Functor] replica " << replica_id + 1 << "/" << parallelism
-                 << ", execution time: " << delta_time / 1e09
-                 << "s, generated: " << generated_tuples << " tuples in " << nt_execution << " executions"
+                 << ", execution time: " << delta_time / 1e06
+                 << "ms, generated: " << generated_tuples << " tuples in " << nt_execution << " executions"
                  << ", bandwidth: " << generated_tuples / (delta_time / 1e09)
                  << " (tuples/s) " << endl;
         }

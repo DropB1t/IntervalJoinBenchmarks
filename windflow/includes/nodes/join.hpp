@@ -79,8 +79,8 @@ public:
         if (processed != 0) {
             double delta_time = static_cast<double>(current_time - app_start_time);
             cout << "[Interval_Join] replica " << replica_id + 1 << "/" << parallelism
-                 << ", execution time: " << delta_time / 1e09
-                 << " s, joined: " << processed << " tuples"
+                 << ", execution time: " << delta_time / 1e06
+                 << " ms, joined: " << processed << " tuples"
                  << ", bandwidth: " << processed / (delta_time / 1e09)
                  << " (tuples/s) " << endl;
         }
