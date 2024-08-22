@@ -33,6 +33,8 @@ MetricGroup metric_group;
 
 void MetricGroup::add(std::string name, Sampler sampler)
 {
+    if (sampler.total() == 0)
+        return;
     // XXX this is not time critical, using a simple mutex lock is good enough
     std::lock_guard lock(mutex_);
     auto &samplers = map_[name];
