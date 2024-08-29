@@ -298,13 +298,11 @@ get_keydir() {
 }
 
 get_synthetic_typedir() {
-    local type="$1"
-    if [ "$type" == "rd" ] || [ "$type" == "sd" ]; then
-        echo "${type}"
-    elif [ "$type" == "0.0" ]; then
+    local skew="$1"
+    if [ "$skew" == "0.0" ]; then
         echo "${synt_type[0]:?}"
     else
-        echo "${synt_type[1]}_${type}"
+        echo "${synt_type[1]}_${skew}"
     fi
 }
 
