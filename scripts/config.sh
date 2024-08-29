@@ -6,7 +6,7 @@ SAMPLING=250
 
 parallelism=( 1 2 4 6 8 16 32 )
 source_degrees=( 1 2 3 4 )
-num_key=( 1000 10000 )
+num_key=( 10 100 1000 )
 batch_size=( 0 16 32 )
 
 lower_bounds=( -500 )
