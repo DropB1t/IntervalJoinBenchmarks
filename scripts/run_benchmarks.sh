@@ -92,7 +92,7 @@ wf_run_synthetic_benchmarks() {
             local type
             type=$(get_synthetic_type "$skewness")
             local typedir
-            typedir=$(get_typedir "$skewness")
+            typedir=$(get_synthetic_typedir "$skewness")
             for mode in "${exec_mode[@]}"; do 
                 if [ "$mode" == "k" ]; then
                     local mp="kp"
@@ -179,7 +179,7 @@ fl_run_synthetic_benchmarks() {
             local type
             type=$(get_synthetic_type "$skewness")
             local typedir
-            typedir=$(get_typedir "$skewness")
+            typedir=$(get_synthetic_typedir "$skewness")
             for key in "${num_key[@]}"; do
                 local keydir
                 keydir=$(get_keydir "$key")
@@ -204,7 +204,7 @@ fl_run_synthetic_benchmarks() {
                 # Average latency per source degree and parallelism
                 src_path="${chart_path%/*}"
                 echo "$src_path"
-                python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
+                python3 "$SCRIPT_DIR"/draw_charts.py fl src "$src_path"
             done
         done
     done
@@ -237,17 +237,17 @@ fl_run_real_benchmarks() {
             # Average latency per source degree and parallelism
             src_path="${chart_path%/*}"
             echo "$src_path"
-            python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
+            python3 "$SCRIPT_DIR"/draw_charts.py fl src "$src_path"
         done
     done
     cd - || exit
 }
 
 synt_mode_comparison_charts() {
-    for type in "${zipfian_skews[@]}"; do
-        local type
-        type=$(get_typedir "$type")
-        local save_dir="$res_dir/${type}_comparison"
+    for skewness in "${zipfian_skews[@]}"; do
+        local typedir
+        typedir=$(get_synthetic_typedir "$skewness")
+        local save_dir="$res_dir/${typedir}_comparison"
         mkdir -p "$save_dir"
         #rm -f "$save_dir"/*
         for key in "${num_key[@]}"; do
@@ -255,10 +255,10 @@ synt_mode_comparison_charts() {
             keydir=$(get_keydir "$key")
             for batch in "${batch_size[@]}"; do
                 for s_deg in "${source_degrees[@]}"; do
-                    local kp_dir="$res_dir/wf/${type}/kp/${keydir}/${batch}_batch/${s_deg}_source"
-                    local dp_dir="$res_dir/wf/${type}/dp/${keydir}/${batch}_batch/${s_deg}_source"
-                    local fl_dir="$res_dir/fl/${type}/${keydir}/${s_deg}_source"
-                    img_name="${type}_${key}_keys_${s_deg}_srate_${batch}_wf_batch"
+                    local kp_dir="$res_dir/wf/${typedir}/kp/${keydir}/${batch}_batch/${s_deg}_source"
+                    local dp_dir="$res_dir/wf/${typedir}/dp/${keydir}/${batch}_batch/${s_deg}_source"
+                    local fl_dir="$res_dir/fl/${typedir}/${keydir}/${s_deg}_source"
+                    img_name="${typedir}_${key}_keys_${s_deg}_srate_${batch}_wf_batch"
                     if [ -d "$kp_dir" ] && [ -d "$dp_dir" ] && [ -d "$fl_dir" ]; then
                         python3 "$SCRIPT_DIR"/draw_charts.py comparison "${save_dir}" "${kp_dir}" "${dp_dir}" "${fl_dir}" "${img_name}"
                     fi
@@ -297,7 +297,7 @@ get_keydir() {
     fi
 }
 
-get_typedir() {
+get_synthetic_typedir() {
     local type="$1"
     if [ "$type" == "rd" ] || [ "$type" == "sd" ]; then
         echo "${type}"

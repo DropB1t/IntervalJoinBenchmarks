@@ -1,10 +1,8 @@
-from ast import parse
 import os
 import json
 import argparse
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 
 from tol_colors import tol_cset
@@ -138,7 +136,7 @@ def draw_avgmetrics(label_prefix, avg_path, source_dir=''):
 
     # Initialize the figure and axis for the plot
     fig, (lt, th) = plt.subplots(2, 1)
-    # Iterate over the batch folders
+    # Iterate over the batch/source folders
     for i, i_folder in enumerate(iter_folders):
         # Initialize y list for the plots
         y_lt = []
@@ -172,7 +170,12 @@ def draw_avgmetrics(label_prefix, avg_path, source_dir=''):
         th.plot(y_th, color=colors[i % len(colors)], label=label_prefix + " = " + str(label_values[i % len(label_values)]), marker="x", markersize=9, ls='-', lw=2)
 
     x_labels, _ = get_x_labels(parallelism_folders)
-    save_avg_figures(avg_path, ('batch_'+source_dir ), fig, th, lt, x_labels)
+    if label_prefix == 'source':
+        img_name = 'avg_source'
+    else:
+        img_name = 'avg_batch_' + source_dir
+
+    save_avg_figures(avg_path, img_name, fig, th, lt, x_labels)
 
 def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
     # Get the list of batch folders, sorted
@@ -201,7 +204,7 @@ def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
     fig, ax = plt.subplots()
     for attribute, means in bar_means.items():
         offset = width * multiplier
-        rects = ax.bar(x + offset, means, width, label=attribute)
+        _ = ax.bar(x + offset, means, width, label=attribute)
         #ax.bar_label(rects, fmt = '%d', padding=3)
         multiplier += 1
     
