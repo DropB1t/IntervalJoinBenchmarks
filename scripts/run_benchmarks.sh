@@ -117,14 +117,14 @@ wf_run_synthetic_benchmarks() {
                                 done
                             done
                             chart_path="${test_dir%/*}"
-                            python3 "$SCRIPT_DIR"/draw_charts.py wf all "$chart_path"
+                            python3 "$SCRIPT_DIR"/draw_charts.py all "$chart_path"
                         done
                         # Average latency per source degree and parallelism
                         src_path="${chart_path%/*}"
-                        python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
+                        python3 "$SCRIPT_DIR"/draw_charts.py src "$src_path"
                     done
                     batch_path="${test_dir%/*_batch*}"
-                    python3 "$SCRIPT_DIR"/draw_charts.py wf batch "$batch_path"
+                    python3 "$SCRIPT_DIR"/draw_charts.py batch "$batch_path"
                 done
             done
         done
@@ -156,14 +156,14 @@ wf_run_real_benchmarks() {
                             done
                         done
                         chart_path="${test_dir%/*}"
-                        python3 "$SCRIPT_DIR"/draw_charts.py wf all "$chart_path"
+                        python3 "$SCRIPT_DIR"/draw_charts.py all "$chart_path"
                     done
                     # Average latency per source degree and parallelism
                     src_path="${chart_path%/*}"
-                    python3 "$SCRIPT_DIR"/draw_charts.py wf src "$src_path"
+                    python3 "$SCRIPT_DIR"/draw_charts.py src "$src_path"
                 done
                 batch_path="${test_dir%/*_batch*}"
-                python3 "$SCRIPT_DIR"/draw_charts.py wf batch "$batch_path"
+                python3 "$SCRIPT_DIR"/draw_charts.py batch "$batch_path"
             done
         done
     done
@@ -199,12 +199,12 @@ fl_run_synthetic_benchmarks() {
                         rm -f throughput.json
                     done
                     chart_path="${test_dir%/*}"
-                    python3 "$SCRIPT_DIR"/draw_charts.py fl all "$chart_path"
+                    python3 "$SCRIPT_DIR"/draw_charts. all "$chart_path"
                 done
                 # Average latency per source degree and parallelism
                 src_path="${chart_path%/*}"
                 echo "$src_path"
-                python3 "$SCRIPT_DIR"/draw_charts.py fl src "$src_path"
+                python3 "$SCRIPT_DIR"/draw_charts. src "$src_path"
             done
         done
     done
@@ -232,12 +232,12 @@ fl_run_real_benchmarks() {
                     rm -f throughput.json
                 done
                 chart_path="${test_dir%/*}"
-                python3 "$SCRIPT_DIR"/draw_charts.py fl all "$chart_path"
+                python3 "$SCRIPT_DIR"/draw_charts.py all "$chart_path"
             done
             # Average latency per source degree and parallelism
             src_path="${chart_path%/*}"
             echo "$src_path"
-            python3 "$SCRIPT_DIR"/draw_charts.py fl src "$src_path"
+            python3 "$SCRIPT_DIR"/draw_charts.py src "$src_path"
         done
     done
     cd - || exit
