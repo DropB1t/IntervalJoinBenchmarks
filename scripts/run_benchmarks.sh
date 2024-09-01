@@ -199,12 +199,12 @@ fl_run_synthetic_benchmarks() {
                         rm -f throughput.json
                     done
                     chart_path="${test_dir%/*}"
-                    python3 "$SCRIPT_DIR"/draw_charts. all "$chart_path"
+                    python3 "$SCRIPT_DIR"/draw_charts.py all "$chart_path"
                 done
                 # Average latency per source degree and parallelism
                 src_path="${chart_path%/*}"
                 echo "$src_path"
-                python3 "$SCRIPT_DIR"/draw_charts. src "$src_path"
+                python3 "$SCRIPT_DIR"/draw_charts.py src "$src_path"
             done
         done
     done
