@@ -23,7 +23,7 @@ In order to run the Flink implementation in this project, the following dependen
 You can generate whole test cases simply by runnig the `run_benchmarks.sh` located in `/scripts` folder. The provided script cycles through all parameters specified in the [config](./scripts/config) file and generates *throughput* and *latency* charts by running `draw_charts.py` python tool.
 
 In order to install the `draw_charts.py` dependencies you need to have on your system [**pip**](https://github.com/pypa/pip): the package installer for Python.
-After that simply run the following command inside the `/scripts` folder:
+After that simply setup a virtual environment by using [venv](https://docs.python.org/3/library/venv.html) package and run the following command inside the `/scripts` folder:
 
 ```
 pip install -r requirements.txt
@@ -41,13 +41,13 @@ pip install -r requirements.txt
                         ├── {source_degree}/
                         │   ├── {1_test_1}/
                         │   │   ├── ...
-                        │   │   ├── latency.svg
-                        │   │   └── throughput.svg
+                        │   │   ├── latency.pdf
+                        │   │   └── throughput.pdf
                         │   ├── {2_test_2}
                         │   ├── {3_test_4}
                         │   ├── {4_test_6}
-                        │   └── source.svg
-                        └── [batch.svg]
+                        │   └── avg_source.pdf
+                        └── [avg_batch.pdf]
 ```
 
 
@@ -57,7 +57,7 @@ In order to generate the synthetic datasets you can compile and run the C++ tool
 ## Real World Datasets
 In order to run a benchmark, of each implementaion, with real datasets you need to download the [datasets.tar.gz](https://www.dropbox.com/scl/fi/y4qkcvci7yqcypg41tu85/datasets.tar.gz?rlkey=6o2d4byhx95d860pojddka4iq&dl=0) archive and unzip it by calling `tar -zvxf datasets.tar.gz` command into root of this repository. Otherwise you can run the `./download_datasets.sh` script located in `/scripts` folder.
 
-Credits for datasets go to [AllianceDB](https://github.com/intellistream/AllianceDB/blob/master/docs/README.md) project.
+Credits for datasets goes to [AllianceDB](https://github.com/intellistream/AllianceDB/blob/master/docs/README.md) project.
 
 ## Latency & Throughput Chart Example
 ![Latency Chart Example](./imgs/latency_example.svg)
