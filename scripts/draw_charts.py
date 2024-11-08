@@ -101,9 +101,9 @@ def draw_latency_chart(tests_path):
 
     for folder in folders:
         folder_path = os.path.join(tests_path, folder)
-        throughput_file = os.path.join(folder_path, 'latency.json')
+        latency_file = os.path.join(folder_path, 'latency.json')
 
-        with open(throughput_file, 'r') as file:
+        with open(latency_file, 'r') as file:
             data = json.load(file)
 
             #Dividing by 1000 to convert from us to ms
@@ -123,9 +123,12 @@ def draw_latency_chart(tests_path):
     
     ax.boxplot(y, labels=x_labels, showfliers=True, showmeans=False, meanline=False,
                        patch_artist=True,
-                       medianprops=dict(linewidth=1),
+                       medianprops=dict(linewidth=0),
                        meanprops=dict(linewidth=1.5, linestyle='-'),
                        flierprops=dict(marker='d', markersize=5, markerfacecolor='lightblue'))
+
+    for i, mean in enumerate(y_line_points):
+        ax.hlines(mean, i + 0.76, i + 1.24, colors='orange', linestyles='--', linewidth=1)
 
     ax.plot(x, y_line_points, color="orange", marker="o", markersize=5, ls='-', lw=1.5)
 
@@ -153,7 +156,7 @@ def draw_throughput_chart(tests_path):
             y.append(np.mean(throughput, axis=0))
             errors.append(np.std(throughput, axis=0))
     
-    ax.bar(x = x, tick_label = x_labels, height = y, yerr=errors, edgecolor="black", error_kw=dict(lw=1, capsize=5, capthick=1, ecolor="black"))
+    ax.bar(x = x, tick_label = x_labels, height = y, yerr=errors, edgecolor="black", error_kw=dict(lw=1, capsize=5, capthick=0.8, ecolor="orange"))
     ax.set(xlabel='Parallelism', ylabel='Throughput (tuples/s)')
 
     fig.savefig(os.path.join(tests_path, 'throughput'))
