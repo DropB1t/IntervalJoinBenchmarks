@@ -3,8 +3,8 @@ Draws various charts based on the provided command line arguments.
 Parameters:
 - chart_type (str): The type of chart to draw. Valid options are 'lt' for latency, 'th' for throughput, 'all' for both, 'src' for average performance per source, 'batch' for average performance per batch, or 'comparison' for comparing different execution modes.
 - res_dir (str): Path to the results directory where the images will be saved. Required if chart_type is 'comparison'.
-- kp_dir (str): Path to the key partitioning workflow mode directory. Required if chart_type is 'comparison'.
-- dp_dir (str): Path to the data partitioning workflow mode directory. Required if chart_type is 'comparison'.
+- kp_dir (str): Path to the key parallelism mode directory. Required if chart_type is 'comparison'.
+- dp_dir (str): Path to the data parallelism mode directory. Required if chart_type is 'comparison'.
 - fl_dir (str): Path to the Flink tests directory. Required if chart_type is 'comparison'.
 - img_name (str): Name of the image file to generate. Required if chart_type is 'comparison'.
 - tests_path (str): Path to the tests folders. Required if chart_type is not 'comparison'.
@@ -27,8 +27,8 @@ def parse_arguments():
     
     if args.chart_type == 'comparison':
         parser.add_argument('res_dir', type=str, help='Path to the results directory were will be saved the images')
-        parser.add_argument('kp_dir', type=str, help='Path to the key partitioning wf mode directory')
-        parser.add_argument('dp_dir', type=str, help='Path to the data partitioning wf mode directory')
+        parser.add_argument('kp_dir', type=str, help='Path to the key parallelism wf mode directory')
+        parser.add_argument('dp_dir', type=str, help='Path to the data parallelism wf mode directory')
         parser.add_argument('fl_dir', type=str, help='Path to the flink tests directory')
         parser.add_argument('img_name', type=str, help='Name of the image file to generate')
     else:
@@ -135,7 +135,7 @@ def draw_latency_chart(tests_path):
     _, max_y = ax.get_ylim()
     tick_interval = tick_interval = round(max_y / 15)
     ax.set_yticks(np.arange(0, max_y, tick_interval))
-    ax.set(xlabel='Parallelism', ylabel='Latency (ms)')
+    ax.set(xlabel='OIJ Parallelism', ylabel='Latency (ms)')
 
     fig.savefig(os.path.join(tests_path, 'latency'))
 
@@ -157,7 +157,7 @@ def draw_throughput_chart(tests_path):
             errors.append(np.std(throughput, axis=0))
     
     ax.bar(x = x, tick_label = x_labels, height = y, yerr=errors, edgecolor="black", error_kw=dict(lw=1, capsize=5, capthick=0.8, ecolor="orange"))
-    ax.set(xlabel='Parallelism', ylabel='Throughput (tuples/s)')
+    ax.set(xlabel='OIJ Parallelism', ylabel='Throughput (tuples/s)')
 
     fig.savefig(os.path.join(tests_path, 'throughput'))
 
@@ -216,7 +216,7 @@ def draw_avgmetrics(label_prefix, avg_path, source_dir=''):
         img_name = 'avg_batch_' + source_dir
 
     lt_ax.legend(loc='best', ncols=4)
-    lt_ax.set(xlabel='Parallelism', ylabel='Average Latency (ms)')
+    lt_ax.set(xlabel='OIJ Parallelism', ylabel='Average Latency (ms)')
 
     _, max_y = lt_ax.get_ylim()
     tick_interval = round(max_y / 15)
@@ -226,7 +226,7 @@ def draw_avgmetrics(label_prefix, avg_path, source_dir=''):
     lt_fig.savefig(os.path.join(avg_path, (img_name+'_latency.'+FORMAT)))
 
     th_ax.legend(loc='best', ncols=4)
-    th_ax.set(xlabel='Parallelism', ylabel='Average Throughput (tuples/s)')
+    th_ax.set(xlabel='OIJ Parallelism', ylabel='Average Throughput (tuples/s)')
     th_ax.set_xticks(range(len(x_labels)), x_labels)
     th_fig.tight_layout()
     th_fig.savefig(os.path.join(avg_path, (img_name+'_throughput.'+FORMAT)))
@@ -242,8 +242,8 @@ def save_merged_avg_figures(path, img_name, fig, th, lt, x_labels):
     lt.set_xticks(range(len(x_labels)), x_labels)
     th.set_xticks(range(len(x_labels)), x_labels)
 
-    lt.set(xlabel='Parallelism', ylabel='Average Latency (ms)')
-    th.set(xlabel='Parallelism', ylabel='Average Throughput (tuples/s)')
+    lt.set(xlabel='OIJ Parallelism', ylabel='Average Latency (ms)')
+    th.set(xlabel='OIJ Parallelism', ylabel='Average Throughput (tuples/s)')
 
     lt.legend(loc='best', ncols=4)
     th.legend(loc='best', ncols=4)
@@ -271,11 +271,11 @@ def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
 
     x_labels, _ = get_x_labels(iter_folders)
     x = np.arange(len(x_labels))
-    variant = ['Flink', 'Key Partitioning', 'Data Partitioning']
+    variant = ['Flink', 'Key Parallelism', 'Data Parallelism']
     bar_means = {
         'Flink': [],
-        'Key Partitioning': [],
-        'Data Partitioning': []
+        'Key Parallelism': [],
+        'Data Parallelism': []
     }
     width = 0.25
     multiplier = 0
@@ -297,7 +297,7 @@ def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
         multiplier += 1
     
     ax.legend(loc='best', ncols=3)
-    ax.set(xlabel='Parallelism', ylabel='Average Throughput (tuples/s)')
+    ax.set(xlabel='OIJ Parallelism', ylabel='Average Throughput (tuples/s)')
     ax.set_xticks(x + width, x_labels)
     fig.tight_layout()
     fig.savefig(os.path.join(res_dir, (img_name+'_throughput.'+FORMAT)))
@@ -318,7 +318,7 @@ def draw_comparison_charts(res_dir, kp_dir, dp_dir, fl_dir, img_name):
         y_lt = []
     
     ax.legend(loc='best', ncols=3)
-    ax.set(xlabel='Parallelism', ylabel='Average Latency (ms)')
+    ax.set(xlabel='OIJ Parallelism', ylabel='Average Latency (ms)')
 
     _, max_y = ax.get_ylim()
     tick_interval = round(max_y / 15)
