@@ -20,22 +20,68 @@ In order to run the Flink implementation in this project, the following dependen
 * [Maven](https://maven.apache.org/install.html) version >= 3.9.6
 
 ## Run Benchmark script
-You can generate whole test cases simply by runnig the `run_benchmarks.sh` located in `/scripts` folder. The provided script cycles through all parameters specified in the [config](./scripts/config) file and generates *throughput* and *latency* charts by running `draw_charts.py` python tool.
+You can generate whole test cases simply by running the `run_benchmarks.sh` located in the `/scripts` folder. The provided script cycles through all parameters specified in the [config](./scripts/config) file and generates *throughput* and *latency* charts by running the `draw_charts.py` Python tool.
 
 In order to install the `draw_charts.py` dependencies you need to have on your system [**pip**](https://github.com/pypa/pip): the package installer for Python.
-After that simply setup a virtual environment by using [venv](https://docs.python.org/3/library/venv.html) package and run the following command inside the `/scripts` folder:
+After that, simply set up a virtual environment by using the [venv](https://docs.python.org/3/library/venv.html) package and run the following command inside the `/scripts` folder:
 
 ```
 pip install -r requirements.txt
+```
+
+### Draw Charts Script
+
+The `draw_charts.py` script is used to generate various charts based on the benchmark results. It supports generating latency, throughput, per batch, per source, and comparison charts.
+
+#### Usage
+
+```
+python draw_charts.py <chart_type> [additional arguments]
+```
+
+#### Parameters
+
+- `chart_type` (str): The type of chart to draw. Valid options are:
+  - `lt`: Latency chart
+  - `th`: Throughput chart
+  - `all`: Both latency and throughput charts
+  - `src`: Average performance per source chart
+  - `batch`: Average performance per batch chart
+  - `comparison`: Comparison chart between all 3 execution modes (key parallelism, data parallelism, and Flink modes)
+
+##### Additional Arguments
+
+- For `comparison` chart type:
+  - `res_dir` (str): Path to the results directory where the images will be saved.
+  - `kp_dir` (str): Path to the key parallelism mode directory.
+  - `dp_dir` (str): Path to the data parallelism mode directory.
+  - `fl_dir` (str): Path to the Flink tests directory.
+  - `img_name` (str): Name of the image file to generate.
+
+- For other chart types:
+  - `tests_path` (str): Path to the tests folders.
+
+#### Example
+
+To generate a comparison chart, you can use the following command:
+
+```
+python draw_charts.py comparison /path/to/results /path/to/kp_dir /path/to/dp_dir /path/to/fl_dir image_name
+```
+
+To generate a latency chart, you can use the following command:
+
+```
+python draw_charts.py lt /path/to/tests
 ```
 
 ### Results folder structure example
 ```
 .
 └── results/
-    └── {benchmark_suite}/
-        └── {dataset_type}/
-            └── [{partitiong_mode}]/
+    └── {framework_type}/
+        └── {workload_type}/
+            └── [{parallelism_mode}]/
                 └── [{synthetic_keys_number}]/
                     └── [{batching_size}]/
                         ├── {source_degree}/
@@ -43,11 +89,11 @@ pip install -r requirements.txt
                         │   │   ├── ...
                         │   │   ├── latency.pdf
                         │   │   └── throughput.pdf
-                        │   ├── {2_test_2}
-                        │   ├── {3_test_4}
-                        │   ├── {4_test_6}
+                        │   ├── {2_test_2}/
+                        │   ├── {3_test_4}/
+                        │   ├── {4_test_6}/
                         │   └── avg_source.pdf
-                        └── [avg_batch.pdf]
+                        └── avg_batch.pdf
 ```
 
 
