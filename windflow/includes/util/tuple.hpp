@@ -54,7 +54,7 @@ struct tuple_t
             
 };
 
-#if 0
+#if 1
 template<>
 struct std::hash<tuple_t>
 {

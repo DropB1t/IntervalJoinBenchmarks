@@ -23,6 +23,7 @@
 
 using namespace std;
 
+#include "includes/selfsimilar_int_distribution.h"
 #include "includes/zipfian_int_distribution.h"
 #include "includes/util.hpp"
 
@@ -33,10 +34,10 @@ void generate_dataset(const string &path, int num_keys, int size, uint seed)
     // For random seed we can use: static_cast<long unsigned int>(std::time(0))
     mt19937 engine(seed);
     auto uniform_key_gen = uniform_int_distribution<int>(1, num_keys);
-    auto zipf_key_gen = zipfian_int_distribution<int>(1, num_keys, zipf_exponent);
-
+    auto zipf_key_gen = zipfian_int_distribution<int>(1, num_keys, skewness);
+    auto selfsimilar_key_gen = selfsimilar_int_distribution<int>(1, num_keys, skewness);
     auto ts_offset = uniform_int_distribution<int>(0, 500);
-    
+
     string dir = dir_path(path);
     if (mkdir(dir.c_str(), 0777) != 0) { // create the dataset directory
         struct stat st;
@@ -52,13 +53,24 @@ void generate_dataset(const string &path, int num_keys, int size, uint seed)
         ds << num_keys << separator << size << endl;
         for (int i = 0; i < size; i++)
         {
-            int key = ( type == gen_types::UNIFORM_SYNTHETIC ? uniform_key_gen(engine) : zipf_key_gen(engine) );
+        	int key = 0;
+        	if (type == gen_types::UNIFORM_SYNTHETIC) {
+        		key = uniform_key_gen(engine);
+        	}
+        	else if (type == gen_types::ZIPF_SYNTHETIC) {
+				key = zipf_key_gen(engine);
+        	}
+        	else if (type == gen_types::SELFSIMILAR_SYNTHETIC) {
+				key = selfsimilar_key_gen(engine);
+        	}
+        	else {
+        		abort();
+        	}
             ds << key << separator << ts_offset(engine) << endl;
         }
     } else {
         cout << "Unable to open " << path << " file";
     }
-
     ds.close();
 }
 
@@ -70,12 +82,12 @@ int main(int argc, char *argv[])
 
     string rpath;
     string lpath;
-    
+
     size_t data_size = 0;
     size_t num_keys = 0;
 
     if (argc == 5 || argc == 7 || argc == 9) {
-        while ((option = getopt_long(argc, argv, "k:s:z:t:", long_opts, &index)) != -1) {
+        while ((option = getopt_long(argc, argv, "k:s:z:t:f:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'k': {
                     num_keys = atoi(optarg);
@@ -86,7 +98,11 @@ int main(int argc, char *argv[])
                     break;
                 }
                 case 'z': {
-                    zipf_exponent = atof(optarg);
+                    skewness = atof(optarg);
+                    break;
+                }
+                case 'f': {
+                    skewness = atof(optarg);
                     break;
                 }
                 case 't': {
@@ -99,7 +115,12 @@ int main(int argc, char *argv[])
                         type = ZIPF_SYNTHETIC;
                         rpath = r_synthetic_zipf_path;
                         lpath = l_synthetic_zipf_path;
-                    } else {
+                    } else if (str_type == "ss") {
+                        type = SELFSIMILAR_SYNTHETIC;
+                        rpath = r_synthetic_ss_path;
+                        lpath = l_synthetic_ss_path;
+                    } 
+                    else {
                         type = UNIFORM_SYNTHETIC;
                         rpath = r_synthetic_uniform_path;
                         lpath = l_synthetic_uniform_path;
@@ -123,13 +144,15 @@ int main(int argc, char *argv[])
     }
 
     if (data_size == 0) data_size = default_data_size;
-    
+
     // display test configuration
     cout << gen_descr << endl;
     cout << "  * data_size: " << data_size << endl;
     cout << "  * number of keys: " << num_keys << endl;
     cout << "  * type: " << gentype_str[type] << endl;
-    if (type == ZIPF_SYNTHETIC) cout << "  * zipf exponent: " << zipf_exponent << endl;
+    if (type == ZIPF_SYNTHETIC) cout << "  * zipf skewness: " << skewness << endl;
+    else if (type == SELFSIMILAR_SYNTHETIC) cout << "  * selfsimilar skewness: " << skewness << endl;
+
     cout << "  * generated files: " << base_name(rpath) << ", " << base_name(lpath) << endl;
 
     generate_dataset(rpath, num_keys, data_size, rseed);

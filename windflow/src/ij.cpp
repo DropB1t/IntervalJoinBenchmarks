@@ -48,6 +48,7 @@ typedef enum
 {
     UNIFORM_SYNTHETIC,
     ZIPF_SYNTHETIC,
+    SELFSIMILAR_SYNTHETIC,
     ROVIO_TEST,
     STOCK_TEST
 } test_types;
@@ -140,7 +141,12 @@ int main(int argc, char *argv[])
                         type = ZIPF_SYNTHETIC;
                         rpath = r_synthetic_zipf_path;
                         lpath = l_synthetic_zipf_path;
-                    } else if (str_type == "rd") {
+                    } else if (str_type == "ss") {
+                        type = SELFSIMILAR_SYNTHETIC;
+                        rpath = r_synthetic_ss_path;
+                        lpath = l_synthetic_ss_path;
+                    } 
+                    else if (str_type == "rd") {
                         type = ROVIO_TEST;
                         rpath = rovio_path;
                         lpath = rovio_path;
@@ -194,6 +200,7 @@ int main(int argc, char *argv[])
         << "Types:"
         << "\n\tsu = synthetic dataset with uniform distribution"
         << "\n\tsz = synthetic dataset with zipf distribution"
+        << "\n\tss = synthetic dataset with selfsimilar distribution"
         << "\n\trd = rovio dataset"
         << "\n\tsd = stock dataset" << endl;
 
@@ -222,7 +229,7 @@ int main(int argc, char *argv[])
     cout << "  * batch size: " << batch_size << endl;
     cout << "  * lower bound: " << lower_bound << endl;
     cout << "  * upper bound: " << upper_bound << endl;
-    if (type == UNIFORM_SYNTHETIC || type == ZIPF_SYNTHETIC) {
+    if (type == UNIFORM_SYNTHETIC || type == ZIPF_SYNTHETIC || type == SELFSIMILAR_SYNTHETIC) {
         cout << "  * data_size: " << data_size << endl;
         cout << "  * number of keys: " << num_keys << endl;
     }
@@ -273,7 +280,7 @@ int main(int argc, char *argv[])
     } else {
         join_build.withDPSMode();
     }
-    
+
     Interval_Join join = join_build.build();
 
     Sink_Functor sink_functor(sampling, app_start_time);
@@ -294,7 +301,7 @@ int main(int argc, char *argv[])
         cout << "  * chaining is disabled" << endl;
         join_pipe.add_sink(sink);
     }
-    
+
     //cout << "Executing topology" << endl;
     cout << fixed << setprecision(2);
 
@@ -302,13 +309,13 @@ int main(int argc, char *argv[])
     volatile unsigned long start_time_main_usecs = current_time_usecs();
     topology.run();
     volatile unsigned long end_time_main_usecs = current_time_usecs();
-    
+
     double elapsed_time_seconds = static_cast<double>(end_time_main_usecs - start_time_main_usecs) / (1000000.0);
     double throughput = sent_tuples / elapsed_time_seconds;
-    
+
     double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
     cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
-    
+
     //cout << "Dumping metrics" << endl;
     util::metric_group.dump_all();
     #ifdef METRICS_COLLECTION
@@ -316,7 +323,7 @@ int main(int argc, char *argv[])
         doc.SetInt(throughput);
         dump_test_results(doc, (outdir +"throughput.json"));
     #endif
-    
+
     return 0;
 }
 
@@ -331,7 +338,7 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
         vector<string> tokens;
 
         // First line - Syntethic Parameters
-        if (type == test_types::UNIFORM_SYNTHETIC ||type == test_types::ZIPF_SYNTHETIC)
+        if (type == test_types::UNIFORM_SYNTHETIC || type == test_types::ZIPF_SYNTHETIC || type == test_types::SELFSIMILAR_SYNTHETIC)
         {
             getline(file, line);
             tokens = split(line, delim);
@@ -342,7 +349,6 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
             num_keys = stoul(tokens[0]);
             data_size = stoul(tokens[1]);
         }
-
         // Parsing tuples
         size_t key;
         int64_t value;
@@ -351,11 +357,19 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
         {
             if (!line.empty()) {
                 tokens = split(line, delim);
-                
                 switch (type)
                 {
                     case UNIFORM_SYNTHETIC:
                     case ZIPF_SYNTHETIC:
+                        if (tokens.size() != 2) {
+                            cout << "Error in parsing Syntethic tuple" << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        key = stoul(tokens[0]);
+                        ts = stoul(tokens[1]);
+                        dataset.push_back(tuple_t(key, ts));
+                        break;
+                    case SELFSIMILAR_SYNTHETIC:
                         if (tokens.size() != 2) {
                             cout << "Error in parsing Syntethic tuple" << endl;
                             exit(EXIT_FAILURE);

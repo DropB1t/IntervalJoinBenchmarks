@@ -44,23 +44,26 @@ const struct option long_opts[] = {
         {"type", REQUIRED, 0, 't'},         // type of test to run
         {"size", REQUIRED, 0, 's'},
         {"zipf", REQUIRED, 0, 'z'},
+        {"selfs", REQUIRED, 0, 'f'},
         {"type", REQUIRED, 0, 't'},         // type of test to run
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --num_key <value> [--size <dataset_size>] --type < su | sz > [--zipf <zipf_exponent>]"
+const string command_help = "Parameters: --num_key <value> [--size <dataset_size>] --type < su | sz | ss > [--zipf <skewness>] [--selfs <skewness>]"
                             "\n\nOptions:"
                             "\n\t--num_key <value> : number of keys"
-                            "\n\t--type < su | sz > : type of test to run"
+                            "\n\t--type < su | sz | ss > : type of test to run"
                             "\n\t--size <dataset_size> : size of the dataset (default: 2000000)"
-                            "\n\t--zipf <zipf_exponent> : zipf exponent (default: 0.8)"
+                            "\n\t--zipf <skewness> : zipf exponent (default: 0.8)"
+                            "\n\t--selfs <skewness> : selfsilimar exponent (default: 0.8)"
                             "\n\t--help : print this help message";
 
 const string dataset_types = "Types:"
                              "\n\tsu = synthetic dataset with uniform distribution"
-                             "\n\tsz = synthetic dataset with zipf distribution";
+                             "\n\tsz = synthetic dataset with zipf distribution"
+                             "\n\tss = synthetic dataset with selfsimilar distribution";
 
-static const char *gentype_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)"};
+static const char *gentype_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution),", "Synthetic Test (SelfSimilar Distribution),"};
 
 const string parse_error = "Error in parsing the input arguments";
 

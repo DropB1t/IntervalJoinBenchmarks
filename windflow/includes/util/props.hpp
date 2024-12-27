@@ -38,7 +38,7 @@ const string l_source_name = "lsource";
 const string join_name = "join";
 const string sink_name = "sink";
 
-static const char *types_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)", "Rovio Dataset", "Stock Dataset"};
+static const char *types_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)", "Synthetic Test (SelfSimilar Distribution)", "Rovio Dataset", "Stock Dataset"};
 static const char *modes_str[] = {"Key based Parallelism", "Data based Parallelism"};
 
 // Datasets path to be used
@@ -57,6 +57,10 @@ const string l_synthetic_uniform_path ="../datasets/synt_u/l_synthetic_uniform_t
 // Synthetic ZipF
 const string r_synthetic_zipf_path ="../datasets/synt_z/r_synthetic_zipf_timestamped.txt";
 const string l_synthetic_zipf_path ="../datasets/synt_z/l_synthetic_zipf_timestamped.txt";
+
+// Synthetic SelfSimilar
+const string r_synthetic_ss_path ="../datasets/synt_ss/r_synthetic_ss_timestamped.txt";
+const string l_synthetic_ss_path ="../datasets/synt_ss/l_synthetic_ss_timestamped.txt";
 
 const char split_char = '|';
 

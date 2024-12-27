@@ -31,7 +31,8 @@ using namespace std;
 typedef enum
 {
     UNIFORM_SYNTHETIC,
-    ZIPF_SYNTHETIC
+    ZIPF_SYNTHETIC,
+    SELFSIMILAR_SYNTHETIC
 } gen_types;
 
 const size_t default_data_size = 2000000;
@@ -41,7 +42,7 @@ const char separator = '|';
 const uint rseed = 12345;
 const uint lseed = 54321;
 
-double zipf_exponent = 0.8;
+double skewness = 0.8;
 
 // path of the datasets to be generated
 const string r_synthetic_uniform_path ="../datasets/synt_u/r_synthetic_uniform_timestamped.txt";
@@ -49,5 +50,8 @@ const string l_synthetic_uniform_path ="../datasets/synt_u/l_synthetic_uniform_t
 
 const string r_synthetic_zipf_path ="../datasets/synt_z/r_synthetic_zipf_timestamped.txt";
 const string l_synthetic_zipf_path ="../datasets/synt_z/l_synthetic_zipf_timestamped.txt";
+
+const string r_synthetic_ss_path ="../datasets/synt_ss/r_synthetic_ss_timestamped.txt";
+const string l_synthetic_ss_path ="../datasets/synt_ss/l_synthetic_ss_timestamped.txt";
 
 #endif //GEN_CONSTANTS_HPP
