@@ -56,7 +56,8 @@ typedef enum
 typedef enum
 {
     KEY_BASED,
-    DATA_BASED
+    DATA_BASED,
+    HYBRID_BASED
 } test_mode;
 
 atomic<long> sent_tuples; // total number of tuples sent by all the sources
@@ -80,6 +81,8 @@ int main(int argc, char *argv[])
     string lpath;
     test_mode mode;
 
+    size_t hybrid_degree = 1;
+
     size_t rsource_par_deg = 0;
     size_t lsource_par_deg = 0;
     size_t join_par_deg = 0;
@@ -95,8 +98,8 @@ int main(int argc, char *argv[])
     bool chaining = false;
     long sampling = 0;
     int rate = 0;
-    if (argc >= 17 && argc <= 20) {
-        while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:l:u:c:o:", long_opts, &index)) != -1) {
+    if (argc >= 17 && argc <= 22) {
+        while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:h:l:u:c:o:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'r': {
                     rate = atoi(optarg);
@@ -167,7 +170,15 @@ int main(int argc, char *argv[])
                         mode = KEY_BASED;
                     } else if (str_mode == "d") {
                         mode = DATA_BASED;
-                    } else { mode = KEY_BASED; }
+                    } else if (str_mode == "h") {
+                        mode = HYBRID_BASED;
+                    } else {
+                        mode = KEY_BASED;
+                    }
+                    break;
+                }
+                case 'h': {
+                    hybrid_degree = atoi(optarg);
                     break;
                 }
                 case 'l': {
@@ -193,7 +204,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-    } else if (argc == 2 && ((option = getopt_long(argc, argv, "h", long_opts, &index)) != -1) && option == 'h') {
+    } else if (argc == 2 && ((option = getopt_long(argc, argv, "h", help_opts, &index)) != -1) && option == 'h') {
         cout << command_help << endl;
 
         cout
@@ -277,8 +288,13 @@ int main(int argc, char *argv[])
 
     if (mode == test_mode::KEY_BASED) {
         join_build.withKPMode();
-    } else {
+    } else if (mode == test_mode::DATA_BASED) {
         join_build.withDPSMode();
+    } else if (mode == test_mode::HYBRID_BASED) {
+        std::cout << "  * hybrid degree: " << hybrid_degree << std::endl;
+        join_build.withHPMode(hybrid_degree);
+    } else {
+        join_build.withKPMode();
     }
 
     Interval_Join join = join_build.build();

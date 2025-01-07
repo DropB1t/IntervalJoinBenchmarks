@@ -36,13 +36,13 @@ using namespace std;
 typedef enum { NONE, REQUIRED } opt_arg;    // an option can require one argument or none
 
 const struct option long_opts[] = {
-        {"help", NONE, 0, 'h'},
         {"rate", REQUIRED, 0, 'r'},      // pipe start (source) parallelism degree
         {"sampling", REQUIRED, 0, 's'},   // predictor parallelism degree
         {"batch", REQUIRED, 0, 'b'},
         {"parallelism", REQUIRED, 0, 'p'},        // pipe end (sink) parallelism degree
         {"type", REQUIRED, 0, 't'},         // type of test to run
         {"mode", REQUIRED, 0, 'm'},         // mode of interval join to run
+        {"hybrid", NONE, 0, 'h'},          // hybrid degree
         {"lower", REQUIRED, 0, 'l'},        // lower bound of interval
         {"upper", REQUIRED, 0, 'u'},        // upper bound of interval
         {"chaining", NONE, 0, 'c'},
@@ -50,7 +50,12 @@ const struct option long_opts[] = {
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --rate <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | ss | rd | sd > --mode < k | d > -l <lower bound in ms> -u <upper bound in ms> [--chaining] [-outdir <path>]";
+const struct option help_opts[] = {
+        {"help", NONE, 0, 'h'},
+        {0, 0, 0, 0}
+};
+
+const string command_help = "Parameters: --rate <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | ss | rd | sd > --mode < k | d > -h <hybrid_degree> -l <lower bound in ms> -u <upper bound in ms> [--chaining] [-outdir <path>]";
 
 // information about application
 const string rsource_str = "  * rsource parallelism degree: ";

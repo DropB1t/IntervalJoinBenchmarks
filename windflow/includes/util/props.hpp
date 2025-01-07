@@ -39,7 +39,7 @@ const string join_name = "join";
 const string sink_name = "sink";
 
 static const char *types_str[] = {"Synthetic Test (Uniform Distribution)", "Synthetic Test (ZipF Distribution)", "Synthetic Test (SelfSimilar Distribution)", "Rovio Dataset", "Stock Dataset"};
-static const char *modes_str[] = {"Key based Parallelism", "Data based Parallelism"};
+static const char *modes_str[] = {"Key based Parallelism", "Data based Parallelism", "Hybrid based Parallelism"};
 
 // Datasets path to be used
 
