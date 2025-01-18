@@ -154,9 +154,22 @@ int main(int argc, char *argv[])
     else if (type == SELFSIMILAR_SYNTHETIC) cout << "  * selfsimilar skewness: " << skewness << endl;
 
     cout << "  * generated files: " << base_name(rpath) << ", " << base_name(lpath) << endl;
-
-    generate_dataset(rpath, num_keys, data_size, rseed);
-    generate_dataset(lpath, num_keys, data_size, lseed);
+    std::string final_path_r = rpath;
+    std::string final_path_l = lpath;
+    if (type == UNIFORM_SYNTHETIC) {
+    	final_path_r = final_path_r + "_k" + std::to_string(num_keys) + ".txt";
+    	final_path_l = final_path_l + "_k" + std::to_string(num_keys) + ".txt";
+    }
+    else if (type == ZIPF_SYNTHETIC) {
+    	final_path_r = final_path_r + "_k" + std::to_string(num_keys) + "_s" + std::to_string(skewness) + ".txt";
+    	final_path_l = final_path_l + "_k" + std::to_string(num_keys) + "_s" + std::to_string(skewness) + ".txt";
+    }
+    else if (type == SELFSIMILAR_SYNTHETIC) {
+    	final_path_r = final_path_r + "_k" + std::to_string(num_keys) + "_s" + std::to_string(skewness) + ".txt";
+    	final_path_l = final_path_l + "_k" + std::to_string(num_keys) + "_s" + std::to_string(skewness) + ".txt";
+    }
+    generate_dataset(final_path_r, num_keys, data_size, rseed);
+    generate_dataset(final_path_l, num_keys, data_size, lseed);
 
     cout << "Datasets are generated ✓" << endl;
 

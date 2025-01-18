@@ -36,6 +36,8 @@ using namespace std;
 using namespace ff;
 using namespace wf;
 
+#define FILTERING_RATIO 0.05
+
 // Interval_Join class
 class Interval_Join_Functor
 {
@@ -59,18 +61,21 @@ public:
             parallelism = rc.getParallelism();
             replica_id = rc.getReplicaIndex();
         }
-
-        tuple_t out(a.key, (a.value + b.value));
-        out.ts = max(a.ts, b.ts);
-#if 0
-        if (processed < 15) {
-            cout << "  * join tuple: system time-> " << out.ts << ", forged timestamp-> " << rc.getCurrentTimestamp() << endl;
-        }
-#endif
         processed++;
         current_time = current_time_nsecs();
-
-        return out;
+        int threshold = (FILTERING_RATIO * 199) + 2;
+        if ((a.value + b.value) < threshold) {
+            tuple_t out(a.key, (a.value + b.value), max(a.ts, b.ts));
+#if 0
+            if (processed < 15) {
+                cout << "  * join tuple: system time-> " << out.ts << ", forged timestamp-> " << rc.getCurrentTimestamp() << endl;
+            }
+#endif
+            return out;
+        }
+        else {
+            return std::nullopt;
+        }
     }
 
     // Destructor
@@ -78,7 +83,7 @@ public:
     {
         if (processed != 0) {
             double delta_time = static_cast<double>(current_time - app_start_time);
-            cout << "[Interval_Join] replica " << replica_id + 1 << "/" << parallelism
+            cout << "[Interval_Join] replica " << replica_id << "/" << parallelism-1
                  << ", execution time: " << delta_time / 1e06
                  << " ms, joined: " << processed << " tuples"
                  << ", bandwidth: " << processed / (delta_time / 1e09)

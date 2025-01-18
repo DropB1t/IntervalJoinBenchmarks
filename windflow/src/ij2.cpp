@@ -31,9 +31,10 @@
 #include<fstream>
 #include<sstream>
 #include<cmath>
+#include<random>
 
-#include <windflow.hpp>
-#include <ff/ff.hpp>
+#include<windflow.hpp>
+#include<ff/ff.hpp>
 #include "../includes/nodes/source.hpp"
 #include "../includes/nodes/join.hpp"
 #include "../includes/nodes/sink.hpp"
@@ -127,6 +128,9 @@ vector<tuple_t> parse_dataset(const string &file_path,
         size_t key;
         int64_t value;
         uint64_t ts;
+        std::random_device dev;
+        std::mt19937 rng(dev());
+        std::uniform_int_distribution<std::mt19937::result_type> dist6(1,100);
         while (getline(file, line))
         {
             if (!line.empty()) {
@@ -141,7 +145,8 @@ vector<tuple_t> parse_dataset(const string &file_path,
                         }
                         key = stoul(tokens[0]) - 1;
                         ts = stoul(tokens[1]);
-                        dataset.push_back(tuple_t(key, ts));
+                        value = dist6(rng);
+                        dataset.push_back(tuple_t(key, value, ts));
                         break;
                     case SELFSIMILAR_SYNTHETIC:
                         if (tokens.size() != 2) {
@@ -150,7 +155,8 @@ vector<tuple_t> parse_dataset(const string &file_path,
                         }
                         key = stoul(tokens[0]) - 1;
                         ts = stoul(tokens[1]);
-                        dataset.push_back(tuple_t(key, ts));
+                        value = dist6(rng);
+                        dataset.push_back(tuple_t(key, value, ts));
                         break;
                     case ROVIO_TEST:
                         if (tokens.size() != 4) {
@@ -159,7 +165,7 @@ vector<tuple_t> parse_dataset(const string &file_path,
                         }
                         key = stoul(tokens[0]) - 1;
                         value = stol(tokens[2]);
-                        dataset.push_back(tuple_t(key, value));
+                        dataset.push_back(tuple_t(key, value, ts));
                         break;
                     case STOCK_TEST:
                         if (tokens.size() != 2) {
@@ -168,7 +174,7 @@ vector<tuple_t> parse_dataset(const string &file_path,
                         }
                         key = stoul(tokens[0]) - 1;
                         value = stol(tokens[1]);
-                        dataset.push_back(tuple_t(key, value));
+                        dataset.push_back(tuple_t(key, value, ts));
                         break;
                 }
             }
@@ -198,12 +204,22 @@ void printAssignment(std::vector<Joiner> &joiners)
     std::cout << "Assignment Joiners -> Keys" << std::endl;
     int idx = 0;
     for (auto &j: joiners) {
-        std::cout << "Joiner " << idx++ << " has load " << j.load << ", keys {";
+        std::cout << "Joiner " << idx++ << " has load " << j.load << ", keys { ";
         for (auto k: j.assigned_keys) {
             std::cout << k << ", ";
         }
         std::cout << "}" << std::endl;
     }
+}
+
+// compute average splitting degree
+double averageSplitting(std::vector<int> splits)
+{
+    double res = 0;
+    for (auto &s: splits) {
+        res += s;
+    }
+    return (res / splits.size());
 }
 
 // function to assign keys to joiners
@@ -243,10 +259,10 @@ void assignKeys(int numJoiners,
     }
     // Check if the load is sufficiently balanced
     if (isBalanced(joiners) <= threshold) {
-        std::cout << "Final balancing is: " << isBalanced(joiners) << ", threshold was: " << threshold << std::endl;
+        std::cout << "STOP FIRST PASS -> final balancing is: " << isBalanced(joiners) << ", threshold was: " << threshold << ", average splitting degree: " << averageSplitting(splitDegrees) << std::endl;
         return;
     }
-    // second pass: reassign keys to multiple joiners if needed
+    // SECOND PASS: reassign keys to multiple joiners if needed
     bool balanced = false;
     while (!balanced) {
         balanced = true;
@@ -261,8 +277,7 @@ void assignKeys(int numJoiners,
                     if (!j1HasKey && j2HasKey) return true;
                     return j1.load < j2.load;
                 });
-
-                // ensure the selected worker doesn't already have the key
+                // ensure the selected worker does not already have the key
                 if (std::find(keyToJoiners[key_d.key].begin(), keyToJoiners[key_d.key].end(), minJoiner - joiners.begin()) == keyToJoiners[key_d.key].end()) {
                     for (auto &j: joiners) {
                         if (std::find((j.assigned_keys).begin(), (j.assigned_keys).end(), key_d.key) != (j.assigned_keys).end()) {
@@ -271,20 +286,20 @@ void assignKeys(int numJoiners,
                     }
                     // assign the key to this joiner
                     (minJoiner->assigned_keys).push_back(key_d.key);
-
                     // update the load of this joiner
                     minJoiner->load += key_d.prob / (splitDegrees[key_d.key] + 1);
-
                     // update the splitting degree of the key
                     splitDegrees[key_d.key]++;
-
                     // update the key to joiner map
                     keyToJoiners[key_d.key].push_back(minJoiner - joiners.begin());
                     balanced = (isBalanced(joiners) <= threshold);
+                    if (balanced) {
+                        break;
+                    }
                 }
             }
         }
-        // Check if the load is now sufficiently balanced
+        // check if the load is now sufficiently balanced
         if (isBalanced(joiners) <= threshold) {
             break;
         }
@@ -294,13 +309,13 @@ void assignKeys(int numJoiners,
             return k1 < k2;
         });
     }
-    std::cout << "Final balancing is: " << isBalanced(joiners) << ", threshold was: " << threshold << std::endl;
+    std::cout << "STOP SECOND PASS -> final balancing is: " << isBalanced(joiners) << ", threshold was: " << threshold << ", average splitting degree: " << averageSplitting(splitDegrees) << std::endl;
     return;
 }
 
 int main(int argc, char *argv[])
 {
-    /// parse arguments from command line
+    // parse arguments from command line
     int option = 0;
     int index = 0;
     string rpath;
@@ -317,19 +332,12 @@ int main(int argc, char *argv[])
     total_bytes = 0;
     size_t batch_size = 0;
     bool chaining = false;
-    long sampling = 0;
+    long sampling = 250;
     int rate = 0;
-    if (argc >= 17 && argc <= 22) {
-        while ((option = getopt_long(argc, argv, "r:k:s:b:p:t:m:l:u:c:o:h:", long_opts, &index)) != -1) {
+    double threshold = 1.2;
+    if (argc >= 13 && argc <= 20) {
+        while ((option = getopt_long(argc, argv, "b:p:t:m:l:u:c:o:h:e:", long_opts, &index)) != -1) {
             switch (option) {
-                case 'r': {
-                    rate = atoi(optarg);
-                    break;
-                }
-                case 's': {
-                    sampling = atoi(optarg);
-                    break;
-                }
                 case 'b': {
                     batch_size = atoi(optarg);
                     break;
@@ -344,8 +352,7 @@ int main(int argc, char *argv[])
                             ss.ignore();
                     }
                     if (par_degs.size() != 4) {
-                        cout << "Error in parsing the input arguments\n"
-                                << endl;
+                        cout << "Error in parsing the input arguments\n" << endl;
                         exit(EXIT_FAILURE);
                     }
                     else {
@@ -358,35 +365,13 @@ int main(int argc, char *argv[])
                 }
                 case 't': {
                     string str_type(optarg);
-                    if (str_type == "su") {
-                        type = UNIFORM_SYNTHETIC;
-                        rpath = r_synthetic_uniform_path;
-                        lpath = l_synthetic_uniform_path;
-                    }
-                    else if (str_type == "sz") {
-                        type = ZIPF_SYNTHETIC;
-                        rpath = r_synthetic_zipf_path;
-                        lpath = l_synthetic_zipf_path;
-                    }
-                    else if (str_type == "ss") {
-                        type = SELFSIMILAR_SYNTHETIC;
-                        rpath = r_synthetic_ss_path;
-                        lpath = l_synthetic_ss_path;
-                    } 
-                    else if (str_type == "rd") {
-                        type = ROVIO_TEST;
-                        rpath = rovio_path;
-                        lpath = rovio_path;
-                    }
-                    else if (str_type == "sd") {
-                        type = STOCK_TEST;
-                        rpath = r_stock_path;
-                        lpath = l_stock_path;
-                    }
-                    else {
-                        type = UNIFORM_SYNTHETIC;
-                        rpath = r_synthetic_uniform_path;
-                        lpath = l_synthetic_uniform_path;
+                    rpath = str_type;
+                    lpath = rpath;
+                    std::string to_replace = "r_ss";
+                    std::string replacement = "l_ss";
+                    size_t pos = lpath.find(to_replace);
+                    if (pos != std::string::npos) {
+                        lpath.replace(pos, to_replace.length(), replacement);
                     }
                     break;
                 }
@@ -426,9 +411,12 @@ int main(int argc, char *argv[])
                     hybrid_par_deg = atoi(optarg);
                     break;
                 }
+                case 'e': {
+                    threshold = atof(optarg);
+                    break;
+                }
                 default: {
-                    cout << "Error in parsing the input arguments\n"
-                            << endl;
+                    cout << "Error in parsing the input arguments\n" << endl;
                     exit(EXIT_FAILURE);
                 }
             }
@@ -436,13 +424,6 @@ int main(int argc, char *argv[])
     }
     else if (argc == 2 && ((option = getopt_long(argc, argv, "h", long_opts, &index)) != -1) && option == 'h') {
         cout << command_help << endl;
-        cout
-        << "Types:"
-        << "\n\tsu = synthetic dataset with uniform distribution"
-        << "\n\tsz = synthetic dataset with zipf distribution"
-        << "\n\tss = synthetic dataset with selfsimilar distribution"
-        << "\n\trd = rovio dataset"
-        << "\n\tsd = stock dataset" << endl;
         exit(EXIT_SUCCESS);
     }
     else {
@@ -450,10 +431,15 @@ int main(int argc, char *argv[])
         cout << command_help << endl;
         exit(EXIT_FAILURE);
     }
+
+    std::cout << "Threshold " << threshold << std::endl;
+
     // data pre-processing
     int size1, size2;
     int n_keys1, n_keys2;
     vector<tuple_t> rdataset, ldataset;
+    std::cout << "rpath: " << rpath << std::endl;
+    std::cout << "lpath: " << lpath << std::endl;
     rdataset = parse_dataset(rpath, split_char, &n_keys1, &size1);
     ldataset = parse_dataset(lpath, split_char, &n_keys2, &size2);
     assert(n_keys1 == n_keys2);
@@ -513,17 +499,9 @@ int main(int argc, char *argv[])
                             .withBoundaries(milliseconds(lower_bound), milliseconds(upper_bound));
     if (mode == test_mode::KEY_BASED) {
         join_build.withKPMode();
-        if (hybrid_par_deg > 0) {
-            std::cout << "option -h cannot be used with KP model" << std::endl;
-            exit(1);
-        }
     }
     else if (mode == test_mode::DATA_BASED) {
         join_build.withDPSMode();
-        if (hybrid_par_deg > 0) {
-            std::cout << "option -h cannot be used with DP model" << std::endl;
-            exit(1);
-        }
     }
     else if (mode == test_mode::HYBRID_BASED) {
         if (hybrid_par_deg == 0) {
@@ -537,7 +515,7 @@ int main(int argc, char *argv[])
         std::unordered_map<int, std::vector<int>> keyToJoiners;
         std::vector<Joiner> joiners(join_par_deg);
         assignKeys(join_par_deg,
-                   1.2,
+                   threshold,
                    probs,
                    keyToJoiners,
                    joiners,
@@ -554,7 +532,6 @@ int main(int argc, char *argv[])
             .withParallelism(sink_par_deg)
             .withName(sink_name)
             .build();
-
     MultiPipe &r = topology.add_source(rsource);
     MultiPipe &l = topology.add_source(lsource);
     MultiPipe &join_pipe = r.merge(l);
@@ -577,7 +554,7 @@ int main(int argc, char *argv[])
     double throughput = sent_tuples / elapsed_time_seconds;
     double mbs = ((total_bytes / 1048576) / elapsed_time_seconds);
     cout << "Measured throughput: " << (int) throughput << " tuples/second, " << mbs << " MB/s" << endl;
-    //cout << "Dumping metrics" << endl;
+    cout << "Dumping metrics" << endl;
     util::metric_group.dump_all();
 #ifdef METRICS_COLLECTION
         rapidjson::Document doc;

@@ -39,19 +39,12 @@ struct tuple_t
         key(0),
         value(0),
         ts(0) {}
-
-    // Constructor I
-    tuple_t(size_t _key, uint64_t _ts):
-            key(_key),
-            value(5),
-            ts(_ts) {}
     
     // Constructor II
-    tuple_t(size_t _key, int64_t _value):
+    tuple_t(size_t _key, int64_t _value, uint64_t _ts):
             key(_key),
             value(_value),
-            ts(0) {}
-            
+            ts(_ts) {}
 };
 
 #if 1

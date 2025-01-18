@@ -45,13 +45,13 @@ const uint lseed = 54321;
 double skewness = 0.8;
 
 // path of the datasets to be generated
-const string r_synthetic_uniform_path ="../datasets/synt_u/r_synthetic_uniform_timestamped.txt";
-const string l_synthetic_uniform_path ="../datasets/synt_u/l_synthetic_uniform_timestamped.txt";
+const string r_synthetic_uniform_path ="../datasets/synt_u/r_uniform";
+const string l_synthetic_uniform_path ="../datasets/synt_u/l_uniform";
 
-const string r_synthetic_zipf_path ="../datasets/synt_z/r_synthetic_zipf_timestamped.txt";
-const string l_synthetic_zipf_path ="../datasets/synt_z/l_synthetic_zipf_timestamped.txt";
+const string r_synthetic_zipf_path ="../datasets/synt_z/r_zipf";
+const string l_synthetic_zipf_path ="../datasets/synt_z/l_zipf";
 
-const string r_synthetic_ss_path ="../datasets/synt_ss/r_synthetic_ss_timestamped.txt";
-const string l_synthetic_ss_path ="../datasets/synt_ss/l_synthetic_ss_timestamped.txt";
+const string r_synthetic_ss_path ="../datasets/synt_ss/r_ss";
+const string l_synthetic_ss_path ="../datasets/synt_ss/l_ss";
 
 #endif //GEN_CONSTANTS_HPP

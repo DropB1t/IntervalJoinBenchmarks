@@ -1,6 +1,5 @@
-
 FF_ROOT         = $(HOME)/fastflow
-WF_INCLUDES     = $(HOME)/dev/thesis/WindFlow/wf
+WF_INCLUDES     = $(HOME)/WindFlow-Hybrid/wf
 INCLUDE_DIR     = ../includes
 OUT_DIR         = ../bin
 

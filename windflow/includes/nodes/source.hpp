@@ -43,17 +43,14 @@ class Source_Functor
 private:
     Execution_Mode_t execution_mode;
     uint64_t forged_ts = 1704106800000000; // next forged timestamp in us starting from January 1, 2024 12:00:00 AM
-
     size_t tuple_size = sizeof(tuple_t);
     const vector<tuple_t> &dataset;
-
     size_t idx;
     size_t data_size;
     size_t batch_size;
     long generated_tuples;
     long generated_bytes;
     long nt_execution;
-
     size_t parallelism;
     size_t replica_id;
     unsigned long app_start_time;
@@ -95,7 +92,6 @@ public:
     {
         replica_id = rc.getReplicaIndex();
         parallelism = rc.getParallelism();
-        
         current_time = current_time_nsecs(); // get the current time
         while (current_time - app_start_time <= app_run_time) // generation loop
         {
@@ -112,18 +108,15 @@ public:
 #endif
             generated_bytes += tuple_size;
             generated_tuples++;
-
             idx++;
             if (idx >= data_size) { // check the dataset boundaries
                 idx = 0;
                 nt_execution++;
             }
-
             if (rate != 0) { // active waiting to respect the generation rate
                 long delay_nsec = (long) ((1.0 / rate) * 1e9);
                 active_delay(delay_nsec);
             }
-
             current_time = current_time_nsecs();
         }
         sent_tuples.fetch_add(generated_tuples);

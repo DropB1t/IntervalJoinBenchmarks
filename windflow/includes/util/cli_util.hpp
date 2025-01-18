@@ -55,7 +55,7 @@ const struct option help_opts[] = {
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --rate <value> --sampling <value> --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < su | sz | ss | rd | sd > --mode < k | d > -h <hybrid_degree> -l <lower bound in ms> -u <upper bound in ms> [--chaining] [-outdir <path>]";
+const string command_help = "Parameters: --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < r_dataset_pathname > --mode < k | d | h > -l <lower bound in ms> -u <upper bound in ms> [-h <hybrid_degree>] [-s <threshold_hybrid>] [--chaining] [-outdir <path>]";
 
 // information about application
 const string rsource_str = "  * rsource parallelism degree: ";
