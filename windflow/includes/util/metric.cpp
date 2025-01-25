@@ -68,6 +68,20 @@ void Metric::dump()
     string filename = "metric_" + name_ + ".json";
     dump_json(doc, filename);
 #endif
+
+#ifdef JOIN_ALL_LATENCIES
+    std::ofstream file("all_latencies.csv");
+    if (file.is_open()) {
+        for (size_t i = 0; i < samples_.size(); ++i) {
+            file << samples_[i];
+            if (i < samples_.size() - 1) {
+                file << ",";
+            }
+        }
+        file << "\n";
+        file.close();
+    }
+#endif
 }
 
 rapidjson::Document Metric::get_json()

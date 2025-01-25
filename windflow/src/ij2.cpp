@@ -72,35 +72,6 @@ size_t data_size = 0;
 int num_keys; // total number of keys in the dataset
 int num_tuples; // total number of tuples in the dataset
 
-// struct key descriptor
-struct Key_d
-{
-    int key = 0;
-    double prob = 0;
-};
-
-// struct representing a Joiner (i.e., Interval_Join replica)
-struct Joiner
-{
-    std::vector<int> assigned_keys;
-    double load = 0.0;
-};
-
-// function to check the actual balanceness
-double isBalanced(const std::vector<Joiner> &joiners)
-{
-    double totalLoad = 0.0;
-    double maxLoad = 0.0;
-    for (const auto &j: joiners) {
-        totalLoad += j.load;
-        if (j.load > maxLoad) {
-            maxLoad = j.load;
-        }
-    }
-    double averageLoad = totalLoad / joiners.size();
-    return (maxLoad / averageLoad);
-}
-
 vector<tuple_t> parse_dataset(const string &file_path,
                               const char delim,
                               int *n_keys,
@@ -184,6 +155,59 @@ vector<tuple_t> parse_dataset(const string &file_path,
     return dataset;
 }
 
+// struct key descriptor
+struct Key_d
+{
+    int key = 0;
+    double prob = 0;
+};
+
+// struct representing a Joiner (i.e., Interval_Join replica)
+struct Joiner
+{
+    std::vector<int> assigned_keys;
+    double load = 0.0;
+};
+
+// function to check the actual balanceness
+double balancing(const std::vector<Joiner> &joiners)
+{
+    double totalLoad = 0.0;
+    double maxLoad = 0.0;
+    for (const auto &j: joiners) {
+        totalLoad += j.load;
+        if (j.load > maxLoad) {
+            maxLoad = j.load;
+        }
+    }
+    double averageLoad = totalLoad / joiners.size();
+    return (maxLoad / averageLoad);
+}
+
+// function to check that all joiners have a positive load
+bool allLoaded(const std::vector<Joiner> &joiners)
+{
+    bool loaded = true;
+    for (auto &j: joiners) {
+        if (j.load == 0) {
+            loaded = false;
+        }
+    }
+    return loaded;
+}
+
+// check that for all keys the max splitting degree has been reached
+bool allMaxSplit(std::vector<int> splits,
+                 int max_splitting)
+{
+    for (auto &d: splits) {
+        if (d < max_splitting) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // function to compute the probabilities of the key
 void compute_probabilities(std::vector<tuple_t> &dataset,
                            std::vector<double> &probs)
@@ -258,14 +282,13 @@ void assignKeys(int numJoiners,
         keyToJoiners[key_d.key].push_back(minJoiner - joiners.begin());
     }
     // Check if the load is sufficiently balanced
-    if (isBalanced(joiners) <= threshold) {
-        std::cout << "STOP FIRST PASS -> final balancing is: " << isBalanced(joiners) << ", threshold was: " << threshold << ", average splitting degree: " << averageSplitting(splitDegrees) << std::endl;
+    if ((balancing(joiners) <= threshold) && allLoaded(joiners)) {
+        std::cout << "STOP FIRST PASS -> final balancing is: " << balancing(joiners) << ", threshold was: " << threshold << ", average splitting degree: " << averageSplitting(splitDegrees) << std::endl;
         return;
     }
     // SECOND PASS: reassign keys to multiple joiners if needed
     bool balanced = false;
     while (!balanced) {
-        balanced = true;
         for (const auto &key_d: sortedKeys) {
             if (splitDegrees[key_d.key] < max_splitting) {
                 // find the joiner with the minimum load that does not already have this key
@@ -292,16 +315,19 @@ void assignKeys(int numJoiners,
                     splitDegrees[key_d.key]++;
                     // update the key to joiner map
                     keyToJoiners[key_d.key].push_back(minJoiner - joiners.begin());
-                    balanced = (isBalanced(joiners) <= threshold);
-                    if (balanced) {
+                    if ((balancing(joiners) <= threshold) && allLoaded(joiners)) {
+                        balanced = true;
                         break;
                     }
+                }
+                else {
+                    abort(); // max_splitting has been reached, absurd!
                 }
             }
         }
         // check if the load is now sufficiently balanced
-        if (isBalanced(joiners) <= threshold) {
-            break;
+        if (((balancing(joiners) <= threshold) && allLoaded(joiners)) || allMaxSplit(splitDegrees, max_splitting)) {
+            balanced = true;
         }
     }
     for (Joiner &j: joiners) {
@@ -309,7 +335,7 @@ void assignKeys(int numJoiners,
             return k1 < k2;
         });
     }
-    std::cout << "STOP SECOND PASS -> final balancing is: " << isBalanced(joiners) << ", threshold was: " << threshold << ", average splitting degree: " << averageSplitting(splitDegrees) << std::endl;
+    std::cout << "STOP SECOND PASS -> final balancing is: " << balancing(joiners) << ", threshold was: " << threshold << ", average splitting degree: " << averageSplitting(splitDegrees) << std::endl;
     return;
 }
 
@@ -367,8 +393,8 @@ int main(int argc, char *argv[])
                     string str_type(optarg);
                     rpath = str_type;
                     lpath = rpath;
-                    std::string to_replace = "r_ss";
-                    std::string replacement = "l_ss";
+                    std::string to_replace = "r_";
+                    std::string replacement = "l_";
                     size_t pos = lpath.find(to_replace);
                     if (pos != std::string::npos) {
                         lpath.replace(pos, to_replace.length(), replacement);
@@ -431,9 +457,6 @@ int main(int argc, char *argv[])
         cout << command_help << endl;
         exit(EXIT_FAILURE);
     }
-
-    std::cout << "Threshold " << threshold << std::endl;
-
     // data pre-processing
     int size1, size2;
     int n_keys1, n_keys2;
@@ -501,7 +524,7 @@ int main(int argc, char *argv[])
         join_build.withKPMode();
     }
     else if (mode == test_mode::DATA_BASED) {
-        join_build.withDPSMode();
+        join_build.withDPMode();
     }
     else if (mode == test_mode::HYBRID_BASED) {
         if (hybrid_par_deg == 0) {
