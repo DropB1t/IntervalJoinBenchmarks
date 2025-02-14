@@ -11,7 +11,7 @@ mkdir -p ${MYDIR}/results/series_8
 echo "Running tests with KP mode..."
 mkdir -p ${MYDIR}/results/series_8/kp
 cd ${MYDIR}
-for i in 5000 10000 20000 30000; do
+for i in 10000 30000; do
     for b in 0 2 4 8 16 32 64 128; do
         for t in 1 2 3 4 5; do
             echo "Test KP with interval ${i}, batch ${b}, repetition # ${t}"
@@ -26,6 +26,7 @@ for i in 5000 10000 20000 30000; do
         done
     done
 done
+
 cd ${MYDIR}/Scripts
 echo "...end"
 
@@ -33,7 +34,7 @@ echo "...end"
 echo "Running tests with DP mode..."
 mkdir -p ${MYDIR}/results/series_8/dp
 cd ${MYDIR}
-for i in 5000 10000 20000 30000; do
+for i in 10000 30000; do
     for b in 0 2 4 8 16 32 64 128; do
         for t in 1 2 3 4 5; do
             echo "Test DP with interval ${i}, batch ${b}, repetition # ${t}"
@@ -48,6 +49,7 @@ for i in 5000 10000 20000 30000; do
         done
     done
 done
+
 cd ${MYDIR}/Scripts
 echo "...end"
 
@@ -55,7 +57,7 @@ echo "...end"
 echo "Running tests with HYBRID mode..."
 mkdir -p ${MYDIR}/results/series_8/hp
 cd ${MYDIR}
-for i in 5000 10000 20000 30000; do
+for i in 10000 30000; do
     for b in 0 2 4 8 16 32 64 128; do
         for t in 1 2 3 4 5; do
             echo "Test HYBRID with interval ${i}, batch ${b}, repetition # ${t}"

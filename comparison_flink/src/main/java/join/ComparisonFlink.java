@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.eventtime.AscendingTimestampsWatermarks;
 import org.apache.flink.api.common.eventtime.TimestampAssigner;
@@ -52,7 +54,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.slf4j.Logger;
-import join.sources.FileSource;
+import join.sources.StreamSource;
 import constants.IntervalJoinConstants;
 import constants.IntervalJoinConstants.Conf;
 import util.Log;
@@ -60,21 +62,14 @@ import util.MetricGroup;
 import util.ThroughputCounter;
 import util.Util;
 
-public class IntervalJoinBench {
-    private static final Logger LOG = Log.get(IntervalJoinBench.class);
-
-    public static enum testType {
-        SYNTHETIC,
-        ROVIO_TEST,
-        STOCK_TEST;
-    }
-    private static testType type = testType.SYNTHETIC; // type of the dataset
-    private static int dataSize = 0;
+public class ComparisonFlink {
+    private static final Logger LOG = Log.get(ComparisonFlink.class);
+    private static int probe_dataset_size = 2000000;
+    private static int base_dataset_size = 1000000;
     private static int numKeys = 0;
 
     public static void main(String[] args) throws Exception {
-        String alert = "Parameters: --rate <rate> --sampling <sampling_value> --parallelism <nSource1,nSource2,nInterval-Join,nSink> --type < path_to_dataset_file > -l <lower bound in ms> -u <upper bound in ms> [--chaining]\n";
-
+        String alert = "Parameters: --parallelism <nSource1,nSource2,nInterval-Join,nSink> --keys <num_keys> -win <window in usec>\n";
         if (args.length == 1 && args[0].equals(IntervalJoinConstants.HELP)) {
             System.out.print(alert);
             System.exit(0);
@@ -91,94 +86,69 @@ public class IntervalJoinBench {
             LOG.error("Unable to load configuration file", e);
             throw new RuntimeException("Unable to load configuration file", e);
         }
-
-        int runtime = conf.getInteger(ConfigOptions.key(Conf.RUNTIME).intType().defaultValue(60)); // runtime in seconds - default 1 min
-        
         ParameterTool argsTool = ParameterTool.fromArgs(args);
-
-        if (!argsTool.has("rate") || !argsTool.has("sampling") || !argsTool.has("type") || !argsTool.has("parallelism")) {
+        if (!argsTool.has("parallelism") || !argsTool.has("keys") || !argsTool.has("win")) {
             LOG.error("Error in parsing the input arguments");
             LOG.error(alert);
             System.exit(1);
         }
-
-        int rate = argsTool.getInt("rate", 0);
-        int samplingRate = argsTool.getInt("sampling", 100);
-        boolean chaining = argsTool.has("chaining");
-        int lower_bound = argsTool.getInt("l", -500);
-        int upper_bound = argsTool.getInt("u", 500);
-        String rpath = argsTool.get("type", "");
-        String lpath = rpath;
-        if (lpath.length() > 0 && lpath.charAt(0) == 'r') {
-            lpath = 'l' + lpath.substring(1);
-        }
+        int samplingRate = 100000;
+        numKeys = argsTool.getInt("keys", 50);
+        int lower_bound = argsTool.getInt("win", 5000);
+        int upper_bound = 0;
         int[] parallelism_degs = ToIntArray(argsTool.get("parallelism").split(","));
         if (parallelism_degs.length != 4) {
             LOG.error("Please provide 4 parallelism degrees");
             System.exit(1);
         }
-
         int source1_deg = parallelism_degs[0];
         int source2_deg = parallelism_degs[1];
         int join_deg = parallelism_degs[2];
         int sink_deg = parallelism_degs[3];
-
-        ArrayList<Tuple> rdataset, ldataset;
-        RichParallelSourceFunction<Tuple3<Integer, Integer, Long>> orangeSource, greenSource;
-
-        rdataset = parseDataset(rpath, IntervalJoinConstants.DEFAULT_SEPARATOR);
-        ldataset = parseDataset(lpath, IntervalJoinConstants.DEFAULT_SEPARATOR);
-
-        orangeSource = new FileSource(runtime, rate, rdataset);
-        greenSource = new FileSource(runtime, rate, ldataset);
-
+        long maxTs = Math.max(base_dataset_size, probe_dataset_size);
+        ArrayList<Element> base_datasets, probe_datasets;
+        RichParallelSourceFunction<Tuple3<String, String, Long>> baseSource, probeSource;
+        base_datasets = generateStream(base_dataset_size, numKeys, maxTs);
+        probe_datasets = generateStream(probe_dataset_size, numKeys, maxTs);
+        baseSource = new StreamSource(base_datasets);
+        probeSource = new StreamSource(probe_datasets);
         // Set up the streaming execution Environment
         Configuration flink_config = new Configuration();
         flink_config.set(TaskManagerOptions.TASK_HEAP_MEMORY , MemorySize.ofMebiBytes(15360));
         flink_config.set(TaskManagerOptions.NUM_TASK_SLOTS, 64);
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(flink_config);
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(flink_config);
         env.getConfig().disableGenericTypes();
 
-        DataStream<Tuple3<Integer, Integer, Long>> orangeStream = env.addSource(orangeSource)
+        DataStream<Tuple3<String, String, Long>> baseStream = env.addSource(baseSource)
                                                     .setParallelism(source1_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<Tuple3<Integer, Integer, Long>> greenStream = env.addSource(greenSource)
+        DataStream<Tuple3<String, String, Long>> probeStream = env.addSource(probeSource)
                                                     .setParallelism(source2_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<Tuple3<Integer, Integer, Long>> joinedStream = orangeStream
+        DataStream<Tuple3<String, String, Long>> joinedStream = baseStream
                                                 .keyBy(new DataKeySelector())
-                                                .intervalJoin(greenStream.keyBy(new DataKeySelector()))
-                                                .between(Time.milliseconds(lower_bound), Time.milliseconds(upper_bound))
-                                                .process( new IntervalJoin() ).setParallelism(join_deg);
+                                                .intervalJoin(probeStream.keyBy(new DataKeySelector()))
+                                                .between(Time.milliseconds(-1*lower_bound/1000), Time.milliseconds(0))
+                                                .process(new IntervalJoin()).setParallelism(join_deg);
 
         joinedStream.addSink(new ConsoleSink(samplingRate)).setParallelism(sink_deg);
 
-        String synthetic_stats =
-        "  * num_keys: " + numKeys + "\n";
-        LOG.info("Submiting " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " with parameters:\n" +
-        "  * rate: " + ((rate == 0) ? "full_speed" : rate) + " tuples/second\n" +
-        "  * sampling: " + samplingRate + "\n" +
+        LOG.info(" Test Interval_Join (comparison with Flink) prepares to run...\n" +
+        "  * num_keys: " + numKeys + "\n" +
         "  * source1: " + source1_deg + "\n" +
         "  * source2: " + source2_deg + "\n" +
         "  * join: " + join_deg + "\n" +
         "  * sink: " + sink_deg + "\n" +
-        "  * \n" +
-        "  * lower_bound: " + lower_bound + "\n" +
-        "  * upper_bound: " + upper_bound + "\n" +
         "  * \n" +
         "  * TOPOLOGY\n" +
         "  * ==============================\n" +
         "  * source1 +--+ \n" + 
         "  *            +--> join --> sink \n" + 
         "  * source2 +--+ \n" + 
-        "  * ==============================\n" +
-        ((chaining) ? "  * chaining enabled" : "  * chaining disabled" ) );
+        "  * ==============================\n");
         try {
-            if (!chaining) {
-                env.disableOperatorChaining();
-            }
             // run the topology
             //LOG.info("Executing " + IntervalJoinConstants.DEFAULT_TOPO_NAME + " topology");
             JobExecutionResult result = env.execute();
@@ -186,14 +156,38 @@ public class IntervalJoinBench {
             // measure throughput
             double throughput = (double) (ThroughputCounter.getValue() / result.getNetRuntime(TimeUnit.SECONDS));
             LOG.info("Measured throughput: " + throughput + " tuples/second");
-            dumpThroughput((int)throughput);
-            //LOG.info("Dumping metrics");
+            // dumpThroughput((int)throughput);
+            LOG.info("Dumping metrics");
             MetricGroup.dumpAll();
         }
         catch (Exception e) {
             LOG.error(e.toString());
         }
+        LOG.info("...end\n");
+    }
 
+    public static ArrayList<Element> generateStream(int count, int keyNum, long maxTs) {
+        if (maxTs < count - 1) {
+            maxTs = count - 1;
+        }
+        ArrayList<Element> stream = new ArrayList<>(count);
+        long step = maxTs / count;
+        if (step < 1) {
+            step = 1;
+        }
+        int countPerKey = count / keyNum;
+        if (countPerKey * keyNum != count) {
+            System.err.println("Element count is not divided by keyNum!");
+            System.exit(1);
+        }
+        for (int i = 0; i < countPerKey; i++) {
+            for (int k = 0; k < keyNum; k++) {
+                int idx = i * keyNum + k;
+                long ts = (i * keyNum + k) * step;
+                stream.add(new Element("key_" + k, Long.toString(ts), ts));
+            }
+        }
+        return stream;
     }
 
     private static void dumpThroughput(int throughput) throws JsonProcessingException, IOException {
@@ -206,77 +200,14 @@ public class IntervalJoinBench {
         return Stream.of(stringArray).mapToInt(Integer::parseInt).toArray();
     }
 
-    private static ArrayList<Tuple> parseDataset(String _file_path, String splitter) {
-        ArrayList<Tuple> ds = new ArrayList<>();
-        try {
-            Scanner scan = new Scanner(new File(_file_path));
-            if (type == testType.SYNTHETIC) {
-                if (scan.hasNextLine()) {
-                    String par_line = scan.nextLine();
-                    String[] params = par_line.split(splitter);
-                    if (params.length != 2) {
-                        LOG.info("Error in parsing Syntethic parameters");
-                        System.exit(1);
-                    }
-                    numKeys = Integer.valueOf(params[0]);
-                    dataSize = Integer.valueOf(params[1]);
-                }
-            }
-            while (scan.hasNextLine()) {
-                String line = scan.nextLine();
-                if (line.isBlank()) { continue; }
-                Tuple tuple;
-                String[] fields = line.split(splitter); // regex quantifier (matches one or many split char)
-                switch (type) {
-                    case ROVIO_TEST:
-            			System.out.println("ROVIO non supported at the moment, aborting program...");
-            			System.exit(1);
-                        if (fields.length != 4) {
-                            LOG.info("Error in parsing tuple");
-                            System.exit(1);
-                        }
-                        tuple = new Tuple(Integer.valueOf(fields[0]), Integer.valueOf(fields[2])); // Key - Value
-                    break;
-                    case STOCK_TEST:
-            			System.out.println("STOCK non supported at the moment, aborting program...");
-            			System.exit(1);
-                        if (fields.length != 2) {
-                            LOG.info("Error in parsing tuple");
-                            System.exit(1);
-                        }
-                        tuple = new Tuple(Integer.valueOf(fields[0]), Integer.valueOf(fields[1])); // Key - Value
-                    break;
-                    case SYNTHETIC:
-                    default:
-                        if (fields.length != 2) {
-                            LOG.info("Error in parsing syntethic tuple");
-                            System.exit(1);
-                        }
-                        tuple = new Tuple(Integer.valueOf(fields[0]), Long.valueOf(fields[1])); // Key - Timestamp
-                    break;
-                }
-                ds.add(tuple);
-            }
-            dataSize = ds.size();
-            scan.close();
-            scan = null;
-        }
-        catch (FileNotFoundException | NullPointerException e) {
-            LOG.error("The file {} does not exists", _file_path);
-            throw new RuntimeException("The file '"  + _file_path + "' does not exists");
-        }
-        return ds;
-    }
-
-    private static class DataKeySelector implements KeySelector<Tuple3<Integer, Integer, Long>, Integer> {
+    private static class DataKeySelector implements KeySelector<Tuple3<String, String, Long>, String> {
         @Override
-        public Integer getKey(Tuple3<Integer, Integer, Long> value) {
+        public String getKey(Tuple3<String, String, Long> value) {
             return value.f0;
         }
     }
 
-    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<Tuple3<Integer, Integer, Long>> {
-
+    private static class IngestionTimeWatermarkStrategy implements WatermarkStrategy<Tuple3<String, String, Long>> {
         private IngestionTimeWatermarkStrategy() {}
 
         public static IngestionTimeWatermarkStrategy create() {
@@ -284,16 +215,15 @@ public class IntervalJoinBench {
         }
 
         @Override
-        public WatermarkGenerator<Tuple3<Integer, Integer, Long>> createWatermarkGenerator(
+        public WatermarkGenerator<Tuple3<String, String, Long>> createWatermarkGenerator(
                 WatermarkGeneratorSupplier.Context context) {
             return new AscendingTimestampsWatermarks<>();
         }
 
         @Override
-        public TimestampAssigner<Tuple3<Integer, Integer, Long>> createTimestampAssigner(
+        public TimestampAssigner<Tuple3<String, String, Long>> createTimestampAssigner(
                 TimestampAssignerSupplier.Context context) {
             return (event, timestamp) -> timestamp;
         }
     }
-
 }

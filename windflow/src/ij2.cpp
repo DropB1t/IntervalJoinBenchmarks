@@ -50,9 +50,7 @@ using namespace wf;
 
 typedef enum
 {
-    UNIFORM_SYNTHETIC,
-    ZIPF_SYNTHETIC,
-    SELFSIMILAR_SYNTHETIC,
+    SYNTHETIC,
     ROVIO_TEST,
     STOCK_TEST
 } test_types;
@@ -67,8 +65,7 @@ typedef enum
 atomic<long> sent_tuples; // total number of tuples sent by all the sources
 atomic<long> total_bytes; // total number of bytes processed by the system
 string outdir="";
-test_types type;
-size_t data_size = 0;
+test_types type; // type of the dataset
 int num_keys; // total number of keys in the dataset
 int num_tuples; // total number of tuples in the dataset
 
@@ -79,17 +76,15 @@ vector<tuple_t> parse_dataset(const string &file_path,
 {
     vector<tuple_t> dataset;
     ifstream file(file_path);
-    if (file.is_open())
-    {
+    if (file.is_open()) {
         string line;
         vector<string> tokens;
         // First line - Syntethic Parameters
-        if (type == test_types::UNIFORM_SYNTHETIC || type == test_types::ZIPF_SYNTHETIC || type == test_types::SELFSIMILAR_SYNTHETIC)
-        {
+        if (type == test_types::SYNTHETIC) {
             getline(file, line);
             tokens = split(line, delim);
             if (tokens.size() != 2) {
-                cout << "Error in parsing Syntethic parameters" << endl;
+                cout << "Error in parsing syntethic parameters" << endl;
                 exit(EXIT_FAILURE);
             }
             *n_keys = stoul(tokens[0]);
@@ -102,24 +97,11 @@ vector<tuple_t> parse_dataset(const string &file_path,
         std::random_device dev;
         std::mt19937 rng(dev());
         std::uniform_int_distribution<std::mt19937::result_type> dist6(1,100);
-        while (getline(file, line))
-        {
+        while (getline(file, line)) {
             if (!line.empty()) {
                 tokens = split(line, delim);
-                switch (type)
-                {
-                    case UNIFORM_SYNTHETIC:
-                    case ZIPF_SYNTHETIC:
-                        if (tokens.size() != 2) {
-                            cout << "Error in parsing Syntethic tuple" << endl;
-                            exit(EXIT_FAILURE);
-                        }
-                        key = stoul(tokens[0]) - 1;
-                        ts = stoul(tokens[1]);
-                        value = dist6(rng);
-                        dataset.push_back(tuple_t(key, value, ts));
-                        break;
-                    case SELFSIMILAR_SYNTHETIC:
+                switch (type) {
+                    case SYNTHETIC:
                         if (tokens.size() != 2) {
                             cout << "Error in parsing Syntethic tuple" << endl;
                             exit(EXIT_FAILURE);
@@ -130,6 +112,7 @@ vector<tuple_t> parse_dataset(const string &file_path,
                         dataset.push_back(tuple_t(key, value, ts));
                         break;
                     case ROVIO_TEST:
+                        abort(); // does not work at the moment
                         if (tokens.size() != 4) {
                             cout << "Error in parsing tuple" << endl;
                             exit(EXIT_FAILURE);
@@ -139,6 +122,7 @@ vector<tuple_t> parse_dataset(const string &file_path,
                         dataset.push_back(tuple_t(key, value, ts));
                         break;
                     case STOCK_TEST:
+                        abort(); // does not work at the moment
                         if (tokens.size() != 2) {
                             cout << "Error in parsing tuple" << endl;
                             exit(EXIT_FAILURE);
@@ -461,8 +445,6 @@ int main(int argc, char *argv[])
     int size1, size2;
     int n_keys1, n_keys2;
     vector<tuple_t> rdataset, ldataset;
-    std::cout << "rpath: " << rpath << std::endl;
-    std::cout << "lpath: " << lpath << std::endl;
     rdataset = parse_dataset(rpath, split_char, &n_keys1, &size1);
     ldataset = parse_dataset(lpath, split_char, &n_keys2, &size2);
     assert(n_keys1 == n_keys2);
@@ -480,11 +462,7 @@ int main(int argc, char *argv[])
     cout << "  * batch size: " << batch_size << endl;
     cout << "  * lower bound: " << lower_bound << endl;
     cout << "  * upper bound: " << upper_bound << endl;
-    if (type == UNIFORM_SYNTHETIC || type == ZIPF_SYNTHETIC || type == SELFSIMILAR_SYNTHETIC) {
-        cout << "  * data_size: " << data_size << endl;
-        cout << "  * number of keys: " << num_keys << endl;
-    }
-    cout << "  * type: " << types_str[type] << endl;
+    cout << "  * number of keys: " << num_keys << endl;
     cout << "  * mode: " << modes_str[mode] << endl;
     cout << rsource_str << rsource_par_deg << endl;
     cout << lsource_str << lsource_par_deg << endl;

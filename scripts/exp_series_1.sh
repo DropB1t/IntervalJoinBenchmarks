@@ -26,6 +26,7 @@ for i in 5000 10000 20000 30000; do
         done
     done
 done
+
 cd ${MYDIR}/Scripts
 echo "...end"
 
@@ -48,6 +49,7 @@ for i in 5000 10000 20000 30000; do
         done
     done
 done
+
 cd ${MYDIR}/Scripts
 echo "...end"
 
