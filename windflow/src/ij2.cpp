@@ -96,7 +96,7 @@ vector<tuple_t> parse_dataset(const string &file_path,
         uint64_t ts;
         std::random_device dev;
         std::mt19937 rng(dev());
-        std::uniform_int_distribution<std::mt19937::result_type> dist6(1,100);
+        std::uniform_int_distribution<std::mt19937::result_type> val_dist(1,100);
         while (getline(file, line)) {
             if (!line.empty()) {
                 tokens = split(line, delim);
@@ -108,7 +108,7 @@ vector<tuple_t> parse_dataset(const string &file_path,
                         }
                         key = stoul(tokens[0]) - 1;
                         ts = stoul(tokens[1]);
-                        value = dist6(rng);
+                        value = val_dist(rng);
                         dataset.push_back(tuple_t(key, value, ts));
                         break;
                     case ROVIO_TEST:
@@ -374,6 +374,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 case 't': {
+                    // TODO: erroneous type parsing hence for stock tests we have different datasets for base and probe
                     string str_type(optarg);
                     rpath = str_type;
                     lpath = rpath;

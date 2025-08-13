@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
     if (mode == test_mode::KEY_BASED) {
         join_build.withKPMode();
     } else if (mode == test_mode::DATA_BASED) {
-        join_build.withDPSMode();
+        join_build.withDPMode();
     } else if (mode == test_mode::HYBRID_BASED) {
         std::cout << "  * hybrid degree: " << hybrid_degree << std::endl;
         join_build.withHPMode(hybrid_degree);
@@ -383,7 +383,7 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
                         }
                         key = stoul(tokens[0]);
                         ts = stoul(tokens[1]);
-                        dataset.push_back(tuple_t(key, ts));
+                        dataset.push_back(tuple_t(key, 1, ts));
                         break;
                     case SELFSIMILAR_SYNTHETIC:
                         if (tokens.size() != 2) {
@@ -392,7 +392,7 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
                         }
                         key = stoul(tokens[0]);
                         ts = stoul(tokens[1]);
-                        dataset.push_back(tuple_t(key, ts));
+                        dataset.push_back(tuple_t(key, 1, ts));
                         break;
                     case ROVIO_TEST:
                         if (tokens.size() != 4) {
@@ -401,7 +401,7 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
                         }
                         key = stoul(tokens[0]);
                         value = stol(tokens[2]);
-                        dataset.push_back(tuple_t(key, value));
+                        dataset.push_back(tuple_t(key, value, 0));
                         break;
                     case STOCK_TEST:
                         if (tokens.size() != 2) {
@@ -410,7 +410,7 @@ vector<tuple_t> parse_dataset(const string &file_path, const char delim)
                         }
                         key = stoul(tokens[0]);
                         value = stol(tokens[1]);
-                        dataset.push_back(tuple_t(key, value));
+                        dataset.push_back(tuple_t(key, value, 0));
                         break;
                 }
             }

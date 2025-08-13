@@ -52,7 +52,12 @@ inline vector<string> split(const string &target, const char delim)
 inline void dump_json(Document &doc, const std::string& filename)
 {
     std::ofstream fs(filename);
-    fs << doc.GetString();
+    
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    doc.Accept(writer);
+    
+    fs << buffer.GetString();
 }
 
 inline void dump_test_results(Document &doc, const std::string& filename) {
