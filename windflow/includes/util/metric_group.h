@@ -21,54 +21,36 @@
  **************************************************************************************
  */
 
-#include "metric_group.hpp"
-#include <algorithm>
-#include <numeric>
+#pragma once
 
-using namespace rapidjson;
+#include "metric.h"
+#include "sampler.h"
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <mutex>
 
 namespace util {
 
-MetricGroup metric_group;
-
-void MetricGroup::add(std::string name, Sampler sampler)
+class MetricGroup
 {
-    if (sampler.total() == 0)
-        return;
-    // XXX this is not time critical, using a simple mutex lock is good enough
-    std::lock_guard lock(mutex_);
-    auto &samplers = map_[name];
-    samplers.push_back(sampler);
-}
+public:
 
-void MetricGroup::dump_all()
-{
-    for (auto &it : map_) {
-        Metric metric = get_metric(it.first);
-        metric.dump();
-    }
-}
+    void add(std::string name, Sampler sampler);
 
-Metric MetricGroup::get_metric(std::string name)
-{
-    Metric metric(name);
+    // XXX this consumes the groups
+    void dump_all();
 
-    // consume all the groups
-    auto &samplers = map_.at(name);
-    while (!samplers.empty()) {
-        auto sampler = samplers.back();
-        metric.total(sampler.total());
+private:
 
-        // add all the values from the sampler
-        for (double value : sampler.values()) {
-            metric.add(value);
-        }
+    Metric get_metric(std::string name);
 
-        // discard it
-        samplers.pop_back();
-    }
+private:
 
-    return metric;
-}
+    std::mutex mutex_;
+    std::unordered_map<std::string, std::vector<Sampler>> map_;
+};
+
+extern MetricGroup metric_group;
 
 }

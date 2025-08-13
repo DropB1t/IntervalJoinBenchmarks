@@ -36,10 +36,10 @@ using namespace chrono;
 #include "../includes/nodes/join.hpp"
 #include "../includes/nodes/sink.hpp"
 
-#include "util/props.hpp"
-#include "util/cli_util.hpp"
-#include "util/tuple.hpp"
-#include "util/util.hpp"
+#include "../includes/util/props.hpp"
+#include "../includes/util/cli_util.hpp"
+#include "../includes/util/tuple.hpp"
+#include "../includes/util/util.hpp"
 
 using namespace ff;
 using namespace wf;

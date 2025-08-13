@@ -29,8 +29,8 @@
 #include<ff/ff.hpp>
 #include "../util/cli_util.hpp"
 #include "../util/tuple.hpp"
-#include "../util/sampler.hpp"
-#include "../util/metric_group.hpp"
+#include "../util/sampler.h"
+#include "../util/metric_group.h"
 
 using namespace std;
 using namespace ff;

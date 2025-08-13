@@ -21,9 +21,9 @@
  **************************************************************************************
  */
 
-#include "props.hpp"
-#include "metric.hpp"
-#include "util.hpp"
+#include "../includes/util/props.hpp"
+#include "../includes/util/util.hpp"
+#include "../includes/util/metric.h"
 
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
@@ -33,6 +33,7 @@
 #include <fstream>
 #include <numeric>
 #include <sstream>
+#include <iostream>
 
 extern string outdir;
 
@@ -61,7 +62,7 @@ void Metric::total(long total)
  */
 void Metric::dump()
 {
-    Document doc = get_json();
+    Document doc = this->get_json();
 #ifdef METRICS_COLLECTION
     dump_test_results(doc, outdir + name_ + ".json");
 #else
