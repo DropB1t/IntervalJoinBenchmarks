@@ -23,15 +23,10 @@
 
 package join;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.eventtime.AscendingTimestampsWatermarks;
 import org.apache.flink.api.common.eventtime.TimestampAssigner;
@@ -42,7 +37,6 @@ import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.TaskManagerOptions;
@@ -56,7 +50,6 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.slf4j.Logger;
 import join.sources.StreamSource;
 import constants.IntervalJoinConstants;
-import constants.IntervalJoinConstants.Conf;
 import util.Log;
 import util.MetricGroup;
 import util.ThroughputCounter;
@@ -78,7 +71,7 @@ public class ComparisonFlink {
         ParameterTool props;
         Configuration conf;
         try {
-            props = ParameterTool.fromPropertiesFile(IntervalJoinBench.class.getResourceAsStream(IntervalJoinConstants.DEFAULT_PROPERTIES));
+            props = ParameterTool.fromPropertiesFile(ComparisonFlink.class.getResourceAsStream(IntervalJoinConstants.DEFAULT_PROPERTIES));
             conf = props.getConfiguration();
             LOG.debug("Loaded configuration file: " + conf.toString());
         }
@@ -183,7 +176,7 @@ public class ComparisonFlink {
         for (int i = 0; i < countPerKey; i++) {
             for (int k = 0; k < keyNum; k++) {
                 int idx = i * keyNum + k;
-                long ts = (i * keyNum + k) * step;
+                long ts = (idx) * step;
                 stream.add(new Element("key_" + k, Long.toString(ts), ts));
             }
         }
