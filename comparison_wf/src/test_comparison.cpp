@@ -62,7 +62,7 @@ vector<Element> generate_stream(int count,
             int idx = i * key_num + k;
             uint64_t ts = 0;
             ts = (i * key_num + k) * step;
-            stream[idx] = Element(std::string("key_") + std::to_string(k), std::to_string(ts), ts);
+            stream.push_back(Element(std::string("key_") + std::to_string(k), std::to_string(ts), ts));
         }
     }
     return stream;

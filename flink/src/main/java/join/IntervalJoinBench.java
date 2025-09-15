@@ -109,8 +109,8 @@ public class IntervalJoinBench {
         int upper_bound = argsTool.getInt("u", 500);
         String rpath = argsTool.get("type", "");
         String lpath = rpath;
-        if (lpath.length() > 0 && lpath.charAt(0) == 'r') {
-            lpath = 'l' + lpath.substring(1);
+        if (lpath.contains("r_")) {
+            lpath.replaceFirst("r_", "l_");
         }
         int[] parallelism_degs = ToIntArray(argsTool.get("parallelism").split(","));
         if (parallelism_degs.length != 4) {
@@ -252,7 +252,7 @@ public class IntervalJoinBench {
                             LOG.info("Error in parsing syntethic tuple");
                             System.exit(1);
                         }
-                        tuple = new Tuple(Integer.valueOf(fields[0]), Long.valueOf(fields[1])); // Key - Timestamp
+                        tuple = new Tuple((Integer.valueOf(fields[0]) - 1), Long.valueOf(fields[1])); // Key - Timestamp
                     break;
                 }
                 ds.add(tuple);

@@ -93,7 +93,7 @@ vector<tuple_t> parse_dataset(const string &file_path,
         // Parsing tuples
         size_t key;
         int64_t value;
-        uint64_t ts;
+        uint64_t ts = 0;
         std::random_device dev;
         std::mt19937 rng(dev());
         std::uniform_int_distribution<std::mt19937::result_type> val_dist(1,100);
