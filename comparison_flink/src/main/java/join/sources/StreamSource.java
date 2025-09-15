@@ -57,7 +57,7 @@ public class StreamSource extends RichParallelSourceFunction<Tuple3<String, Stri
         // generation loop
         for (index = 0; index < data_size; index++) {
             Element elem = dataset.get(index);       
-            ctx.collectWithTimestamp(new Tuple3<>(elem.key, elem.value, System.nanoTime()), elem.timestamp/1000);
+            ctx.collectWithTimestamp(new Tuple3<>(elem.key, elem.value, System.nanoTime()), elem.timestamp + 125);
             generated++;
         }
         // terminate the generation

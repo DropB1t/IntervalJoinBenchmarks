@@ -56,7 +56,10 @@ public class ConsoleSink extends RichSinkFunction<Tuple3<String, String, Long>> 
 
     @Override
     public void invoke(Tuple3<String, String, Long> input, Context context) throws Exception {
+        String key = input.f0;
+        String val = input.f1;
         long timestamp = input.f2;
+        System.out.println("" + key + "\t" + val + "\t" + (context.timestamp()));
         // evaluate latency
         long now = System.nanoTime();
         latency.add((double)((now - timestamp)/ 1e3), System.nanoTime()); // us precision

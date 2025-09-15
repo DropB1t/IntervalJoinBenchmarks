@@ -34,6 +34,7 @@ import org.apache.flink.api.common.eventtime.TimestampAssignerSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkGeneratorSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -46,6 +47,8 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMap
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.slf4j.Logger;
 import join.sources.StreamSource;
@@ -120,11 +123,27 @@ public class ComparisonFlink {
                                                     .setParallelism(source2_deg)
                                                     .assignTimestampsAndWatermarks(IngestionTimeWatermarkStrategy.create());
 
-        DataStream<Tuple3<String, String, Long>> joinedStream = baseStream
+        /* DataStream<Tuple3<String, String, Long>> joinedStream = baseStream
                                                 .keyBy(new DataKeySelector())
                                                 .intervalJoin(probeStream.keyBy(new DataKeySelector()))
                                                 .between(Time.milliseconds(-1*lower_bound/1000), Time.milliseconds(0))
-                                                .process(new IntervalJoin()).setParallelism(join_deg);
+                                                .process(new IntervalJoin()).setParallelism(join_deg); */
+
+        DataStream<Tuple3<String, String, Long>> joinedStream = baseStream.join(probeStream)
+                    .where(tuple -> tuple.f0)
+                    .equalTo(tuple -> tuple.f0)
+                    .window(SlidingEventTimeWindows.of(Time.milliseconds(lower_bound/1000), Time.milliseconds(100)))
+                    .with(new JoinFunction<Tuple3<String, String, Long>, Tuple3<String, String, Long>, Tuple3<String, String, Long>> (){
+                        @Override
+                        public Tuple3<String, String, Long> join(Tuple3<String, String, Long> first, Tuple3<String, String, Long> second) {
+                            Tuple3<String, String, Long> out_t = new Tuple3<String, String, Long>();
+                            Long max_ts = Math.max(first.f2, second.f2);
+                            out_t.f0 = first.f0;
+                            out_t.f1 = first.f1 + second.f1;
+                            out_t.f2 = max_ts;
+                            return out_t;
+                        }
+                    }).setParallelism(join_deg);
 
         joinedStream.addSink(new ConsoleSink(samplingRate)).setParallelism(sink_deg);
 
