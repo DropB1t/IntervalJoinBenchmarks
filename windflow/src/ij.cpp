@@ -32,14 +32,14 @@ using namespace chrono;
 #include <windflow.hpp>
 #include <ff/ff.hpp>
 
-#include "../includes/nodes/source.hpp"
-#include "../includes/nodes/join.hpp"
-#include "../includes/nodes/sink.hpp"
+#include "nodes/source.hpp"
+#include "nodes/join.hpp"
+#include "nodes/sink.hpp"
 
-#include "../includes/util/props.hpp"
-#include "../includes/util/cli_util.hpp"
-#include "../includes/util/tuple.hpp"
-#include "../includes/util/util.hpp"
+#include "util/props.hpp"
+#include "util/cli_util.hpp"
+#include "util/tuple.hpp"
+#include "util/util.hpp"
 
 using namespace ff;
 using namespace wf;

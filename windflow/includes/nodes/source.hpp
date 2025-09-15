@@ -27,8 +27,8 @@
 #include<fstream>
 #include<vector>
 #include<ff/ff.hpp>
-#include "../util/props.hpp"
-#include "../util/tuple.hpp" 
+#include "util/props.hpp"
+#include "util/tuple.hpp" 
 
 using namespace std;
 using namespace ff;

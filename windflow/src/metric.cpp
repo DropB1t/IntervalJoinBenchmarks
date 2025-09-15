@@ -21,9 +21,9 @@
  **************************************************************************************
  */
 
-#include "../includes/util/props.hpp"
-#include "../includes/util/util.hpp"
-#include "../includes/util/metric.h"
+#include "util/props.hpp"
+#include "util/util.hpp"
+#include "util/metric.h"
 
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>

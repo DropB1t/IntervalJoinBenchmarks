@@ -28,9 +28,9 @@
 #include<string>
 #include<vector>
 #include<regex>
-#include "../util/tuple.hpp"
-#include "../util/props.hpp"
-#include "../util/cli_util.hpp"
+#include "util/tuple.hpp"
+#include "util/props.hpp"
+#include "util/cli_util.hpp"
 
 using namespace std;
 using namespace ff;
