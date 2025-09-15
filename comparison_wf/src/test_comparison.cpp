@@ -62,7 +62,7 @@ vector<Element> generate_stream(int count,
             int idx = i * key_num + k;
             uint64_t ts = 0;
             ts = (i * key_num + k) * step;
-            stream.push_back(Element(std::string("key_") + std::to_string(k), std::to_string(ts), ts));
+            stream[idx] = Element(std::string("key_") + std::to_string(k), std::to_string(ts), ts);
         }
     }
     return stream;
@@ -352,14 +352,24 @@ int main(int argc, char *argv[])
     std::vector<Joiner> joiners(join_par_deg);
     assignKeys(join_par_deg, 1.2, probs, keyToJoiners, joiners, join_par_deg, num_keys);
     printAssignment(joiners);
-    Interval_Join_Builder join_build = Interval_Join_Builder(join_functor)
+    /* Interval_Join_Builder join_build = Interval_Join_Builder(join_functor)
                             .withParallelism(join_par_deg)
                             .withName("OIJ")
                             .withOutputBatchSize(batch_size)
                             .withKeyBy([](const Element &e) -> std::string { return e.key; })
                             .withBoundaries(microseconds(win_len * (-1)), microseconds(0))
                             .withHPMode(join_par_deg, keyToJoiners);
-    Interval_Join join = join_build.build();
+    Interval_Join join = join_build.build(); */
+
+    Window_Join_Builder join_build = Window_Join_Builder(join_functor)
+                            .withParallelism(join_par_deg)
+                            .withName("OIJ")
+                            .withOutputBatchSize(batch_size)
+                            .withKeyBy([](const Element &e) -> std::string { return e.key; })
+                            .withSlidingWindows(microseconds(win_len), microseconds(100000))
+                            .withKPMode();
+
+    Window_Join join = join_build.build();
 
     Sink_Functor sink_functor(sampling_interval);
     Sink sink = Sink_Builder(sink_functor)

@@ -58,13 +58,13 @@ public:
     void operator()(Source_Shipper<Element> &shipper, RuntimeContext &rc)
     {
         for (int i=0; i<dataset.size(); i++) {
-            Element el = dataset.at(idx);
+            Element el = dataset.at(i);
+            //std::cout << "Emitting: " << el.key << " : " << el.val << " at ts " << el.ts << std::endl;
             next_ts = el.ts;
             el.ts = current_time_nsecs();
-            shipper.pushWithTimestamp(std::move(el), next_ts); // send the next tuple
-            shipper.setNextWatermark(next_ts);
+            shipper.pushWithTimestamp(std::move(el), (next_ts + 125) * 1000); // send the next tuple
+            shipper.setNextWatermark((next_ts + 125) * 1000);
             generated_tuples++;
-            idx++;
         }
         sent_tuples.fetch_add(generated_tuples);
     }
@@ -101,6 +101,7 @@ public:
     void operator()(optional<Element> &el, RuntimeContext &rc)
     {
         if (el) {
+            cout << (*el).key << "\t" << (*el).val << "\t" << rc.getCurrentTimestamp()/1000 << endl;
             joined++;
             current_time = current_time_nsecs();
             unsigned long tuple_latency = (current_time - (*el).ts) / 1e03; // us precision
