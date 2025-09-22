@@ -43,8 +43,8 @@ const struct option long_opts[] = {
         {"type", REQUIRED, 0, 't'},         // type of test to run
         {"mode", REQUIRED, 0, 'm'},         // mode of interval join to run
         {"hybrid", NONE, 0, 'h'},          // hybrid degree
-        {"lower", REQUIRED, 0, 'l'},        // lower bound of interval
-        {"upper", REQUIRED, 0, 'u'},        // upper bound of interval
+        {"window", REQUIRED, 0, 'l'},        // window length
+        {"slide", REQUIRED, 0, 'u'},        // slide length
         {"chaining", NONE, 0, 'c'},
         {"outdir", REQUIRED, 0, 'o'},
         {"load", NONE, 0, 'e'},
@@ -56,7 +56,7 @@ const struct option help_opts[] = {
         {0, 0, 0, 0}
 };
 
-const string command_help = "Parameters: --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < r_dataset_pathname > --mode < k | d | h > -l <lower bound in ms> -u <upper bound in ms> [-h <hybrid_degree>] [-e <threshold_hybrid>] [--chaining] [-outdir <path>]";
+const string command_help_2 = "Parameters: --batch <size> --parallelism <nRSource,nLSource,nJoin,nSink> --type < r_dataset_pathname > --mode < k | d | h > -w <window length in ms> -s <slide length in ms> [-h <hybrid_degree>] [-e <threshold_hybrid>] [--chaining] [-outdir <path>]";
 
 // information about application
 const string rsource_str = "  * rsource parallelism degree: ";

@@ -39,7 +39,7 @@
 #include "nodes/join.hpp"
 #include "nodes/sink.hpp"
 #include "util/props.hpp"
-#include "util/cli_util.hpp"
+#include "util/cli_util_2.hpp"
 #include "util/tuple.hpp"
 #include "util/util.hpp"
 
@@ -336,8 +336,8 @@ int main(int argc, char *argv[])
     size_t join_par_deg = 0;
     size_t sink_par_deg = 0;
     size_t hybrid_par_deg = 0;
-    int64_t lower_bound = 0;
-    int64_t upper_bound = 0;
+    int64_t window_len = 0;
+    int64_t slide_len = 0;
     sent_tuples = 0;
     total_bytes = 0;
     size_t batch_size = 0;
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
     int rate = 0;
     double threshold = 1.2;
     if (argc >= 13 && argc <= 20) {
-        while ((option = getopt_long(argc, argv, "b:p:t:m:l:u:c:o:h:e:", long_opts, &index)) != -1) {
+        while ((option = getopt_long(argc, argv, "b:p:t:m:w:s:c:o:h:e:", long_opts, &index)) != -1) {
             switch (option) {
                 case 'b': {
                     batch_size = atoi(optarg);
@@ -402,12 +402,12 @@ int main(int argc, char *argv[])
                     }
                     break;
                 }
-                case 'l': {
-                    lower_bound = atoi(optarg);
+                case 'w': {
+                    window_len = atoi(optarg);
                     break;
                 }
-                case 'u': {
-                    upper_bound = atoi(optarg);
+                case 's': {
+                    slide_len = atoi(optarg);
                     break;
                 }
                 case 'c': {
@@ -434,12 +434,12 @@ int main(int argc, char *argv[])
         }
     }
     else if (argc == 2 && ((option = getopt_long(argc, argv, "h", long_opts, &index)) != -1) && option == 'h') {
-        cout << command_help << endl;
+        cout << command_help_2 << endl;
         exit(EXIT_SUCCESS);
     }
     else {
         cout << "Error in parsing the input arguments" << endl;
-        cout << command_help << endl;
+        cout << command_help_2 << endl;
         exit(EXIT_FAILURE);
     }
     // data pre-processing
@@ -461,8 +461,8 @@ int main(int argc, char *argv[])
     }
     cout << "  * sampling: " << sampling << endl;
     cout << "  * batch size: " << batch_size << endl;
-    cout << "  * lower bound: " << lower_bound << endl;
-    cout << "  * upper bound: " << upper_bound << endl;
+    cout << "  * window length: " << window_len << endl;
+    cout << "  * slide length: " << slide_len << endl;
     cout << "  * number of keys: " << num_keys << endl;
     cout << "  * mode: " << modes_str[mode] << endl;
     cout << rsource_str << rsource_par_deg << endl;
@@ -493,12 +493,12 @@ int main(int argc, char *argv[])
                     .withOutputBatchSize(batch_size)
                     .build();
     Join_Functor join_functor(app_start_time);
-    Interval_Join_Builder join_build = Interval_Join_Builder(join_functor)
-                            .withParallelism(join_par_deg)
-                            .withName(join_name)
-                            .withOutputBatchSize(batch_size)
-                            .withKeyBy([](const tuple_t &t) -> int { return t.key; })
-                            .withBoundaries(milliseconds(lower_bound), milliseconds(upper_bound));
+    Window_Join_Builder join_build = Window_Join_Builder(join_functor)
+    									.withParallelism(join_par_deg)
+			                            .withName(join_name)
+			                            .withOutputBatchSize(batch_size)
+			                            .withKeyBy([](const tuple_t &t) -> int { return t.key; })
+			                            .withSlidingWindows(milliseconds(window_len), milliseconds(slide_len));
     if (mode == test_mode::KEY_BASED) {
         join_build.withKPMode();
     }
@@ -528,7 +528,7 @@ int main(int argc, char *argv[])
     else {
         abort();
     }
-    Interval_Join join = join_build.build();
+    Window_Join join = join_build.build();
     Sink_Functor sink_functor(sampling, app_start_time);
     Sink sink = Sink_Builder(sink_functor)
             .withParallelism(sink_par_deg)

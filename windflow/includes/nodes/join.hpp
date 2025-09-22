@@ -30,7 +30,6 @@
 #include<regex>
 #include "util/tuple.hpp"
 #include "util/props.hpp"
-#include "util/cli_util.hpp"
 
 using namespace std;
 using namespace ff;
@@ -38,8 +37,8 @@ using namespace wf;
 
 #define FILTERING_RATIO 0.05
 
-// Interval_Join class
-class Interval_Join_Functor
+// Join_Functor class
+class Join_Functor
 {
 private:
     unsigned long app_start_time;
@@ -50,7 +49,7 @@ private:
 
 public:
     // Constructor
-    Interval_Join_Functor(const unsigned long _app_start_time):
+    Join_Functor(const unsigned long _app_start_time):
                     processed(0),
                     app_start_time(_app_start_time),
                     current_time(_app_start_time) {} 
@@ -79,11 +78,11 @@ public:
     }
 
     // Destructor
-    ~Interval_Join_Functor()
+    ~Join_Functor()
     {
         if (processed != 0) {
             double delta_time = static_cast<double>(current_time - app_start_time);
-            cout << "[Interval_Join] replica " << replica_id << "/" << parallelism-1
+            cout << "[Join] replica " << replica_id << "/" << parallelism-1
                  << ", execution time: " << delta_time / 1e06
                  << " ms, joined: " << processed << " tuples"
                  << ", bandwidth: " << processed / (delta_time / 1e09)

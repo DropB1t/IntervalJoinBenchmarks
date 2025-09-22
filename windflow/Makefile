@@ -8,6 +8,8 @@ ij:
 ij2:
 	$(MAKE) ij2 -C src
 
+wjn:
+	$(MAKE) wjn -C src
 clean:
 	$(MAKE) clean -C src
 
