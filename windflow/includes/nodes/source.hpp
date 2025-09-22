@@ -42,7 +42,7 @@ class Source_Functor
 {
 private:
     Execution_Mode_t execution_mode;
-    uint64_t forged_ts = 1704106800000000; // next forged timestamp in us starting from January 1, 2024 12:00:00 AM
+    uint64_t forged_ts;
     size_t tuple_size = sizeof(tuple_t);
     const vector<tuple_t> &dataset;
     size_t idx;
@@ -56,6 +56,7 @@ private:
     unsigned long app_start_time;
     unsigned long current_time;
     int rate;
+    bool isWJN;
 
     // active_delay method
     void active_delay(unsigned long waste_time)
@@ -74,7 +75,8 @@ public:
                    const int _rate,
                    const unsigned long _app_start_time,
                    const size_t _batch_size,
-                   Execution_Mode_t _e):
+                   Execution_Mode_t _e,
+                   bool _isWJN):
                    dataset(_dataset),
                    rate(_rate),
                    idx(0),
@@ -85,7 +87,16 @@ public:
                    current_time(_app_start_time),
                    batch_size(_batch_size),
                    execution_mode(_e),
-                   data_size(_dataset.size()) {}
+                   data_size(_dataset.size()),
+                   isWJN(_isWJN)
+    {
+    	if (isWJN) {
+    		forged_ts = 0; // windows start from 0 timestamp in WindFlow
+    	}
+    	else {
+    		forged_ts = 1704106800000000; // next forged timestamp in us starting from January 1, 2024 12:00:00 AM
+    	} 	
+    }
 
     // operator() method
     void operator()(Source_Shipper<tuple_t> &shipper, RuntimeContext &rc)

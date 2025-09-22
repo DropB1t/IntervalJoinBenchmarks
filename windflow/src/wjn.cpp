@@ -480,13 +480,13 @@ int main(int argc, char *argv[])
     unsigned long app_start_time = current_time_nsecs();
     Execution_Mode_t exec_mode = Execution_Mode_t::DEFAULT;
     PipeGraph topology(topology_name, exec_mode, Time_Policy_t::EVENT_TIME);
-    Source_Functor rsource_functor(rdataset, rate, app_start_time, batch_size, exec_mode);
+    Source_Functor rsource_functor(rdataset, rate, app_start_time, batch_size, exec_mode, true);
     Source rsource = Source_Builder(rsource_functor)
                     .withParallelism(rsource_par_deg)
                     .withName(r_source_name)
                     .withOutputBatchSize(batch_size)
                     .build();
-    Source_Functor lsource_functor(ldataset, rate, app_start_time, batch_size, exec_mode);
+    Source_Functor lsource_functor(ldataset, rate, app_start_time, batch_size, exec_mode, true);
     Source lsource = Source_Builder(lsource_functor)
                     .withParallelism(lsource_par_deg)
                     .withName(l_source_name)
