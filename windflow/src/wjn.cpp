@@ -498,7 +498,7 @@ int main(int argc, char *argv[])
 			                            .withName(join_name)
 			                            .withOutputBatchSize(batch_size)
 			                            .withKeyBy([](const tuple_t &t) -> int { return t.key; })
-			                            .withSlidingWindows(milliseconds(window_len), milliseconds(slide_len));
+			                            .withTumblingWindows(milliseconds(window_len));
     if (mode == test_mode::KEY_BASED) {
         join_build.withKPMode();
     }
